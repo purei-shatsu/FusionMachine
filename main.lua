@@ -4,22 +4,15 @@ Very modified:
 	Can play a max of 8 stars from hand per turn
 Slightly modified
 	Can only play one card/fusion per turn (same as original)
-	[MAYBE] Total levels of cards in the can't go over a certain value
+	[MAYBE] Total levels of cards in the deck can't go over a certain value
 		Provavelmente é desnecessário, já é melhor usar cartas com atk 0 pra fazer fusões rápidas
-Only "non-special" monsters (main deck, non-pendulum, non-ritual, atk<=3000 and def<=3000) can go into the main deck (the rest can only be obtained through fusion)
-	Or just put atk and def <= 3000 and ignore the card types completely
+Only monsters with atk<=3000 and def<=3000 can go into the main deck (the rest can only be obtained through fusion)
 Rest are Forbidden Memories rules
 [TODO Spells/equips/traps]
-[If you ever consider including monster effects, remember they can be unbalanced.
-Ex: Low level, high attack, high defense. Would be balanced by a negative effect in the TCG
-However, if levels don't matter, go for it!]
-[Don't include Main Deck effect monsters! They can be very strong (ex: 5000/5000) without breaking the non-special rule.]
-Just make it so any monster with more than 3000 atk or def is special]
 --]]
 
 --[[TODO
 Effects:
-	Flares
 	Particles
 ]]
 
@@ -28,6 +21,7 @@ local sqlite3 = require("sqlite3")
 
 local path = system.pathForFile("cards.cdb")
 local db = sqlite3.open(path)
+local zero = 1e-5
 
 --override transition.to to allow slow mode
 --[[
@@ -82,11 +76,16 @@ local scale = 1.5
 local cardWidth, cardHeight = 177*scale, 254*scale
 local effect = {
 	spiral = display.newImageRect(effectsGroup, 'images/spiral.png', 600, 600),
-	white = display.newRect(effectsGroup, display.contentCenterX, display.contentCenterY, display.actualContentWidth, display.actualContentHeight)
+	white = display.newRect(effectsGroup, display.contentCenterX, display.contentCenterY, display.actualContentWidth, display.actualContentHeight),
+	flare = {},
 }
 effect.spiral.alpha = 0
 effect.white.alpha = 0
 effect.white:setFillColor(1)
+for i=1,5 do
+	effect.flare[i] = display.newImageRect(effectsGroup, 'images/flare.png', 420, 277)
+	effect.flare[i].alpha = 0
+end
 
 local fov = 500
 local function getCardRotationPath(angle)
@@ -310,6 +309,8 @@ local function performFusion()
 			local rotations = 2.75
 			centerX = centerX + radius --translate center to keep A on it's original position
 			executeEveryFrame({time=duration, transition=easing.inSine, delay=delay, onStart=function()
+				audio.play(sound.fusion)
+
 				--show spiral image gradually
 				local spiral = effect.spiral
 				spiral.alpha = 0
@@ -321,9 +322,31 @@ local function performFusion()
 				spiral.xScale = initialScale
 				spiral.yScale = initialScale
 				transition.to(spiral, {time=duration, transition=easing.linear, alpha=0.8, xScale=finalScale, yScale=finalScale, rotation=540, onComplete=function()
-					effect.spiral.alpha = 0
+					spiral.alpha = 0
 				end})
-				audio.play(sound.fusion)
+
+				--show flares
+				for i=1,#effect.flare do
+					--choose initial and final angle
+					local initialAngle = math.random(360)
+					local finalAngle = initialAngle + math.random(-90, 90)
+
+					--show, scale and rotate flare
+					local flare = effect.flare[i]
+					flare.alpha = 0
+					flare.x = centerX
+					flare.y = centerY
+					initialScale = zero
+					finalScale = math.random(2.5, 3.5)
+					flare.rotation = initialAngle
+					flare.xScale = initialScale
+					flare.yScale = initialScale
+					local flareDelay = duration*0.4
+					transition.to(flare, {alpha=0.5, time=duration-flareDelay, delay=flareDelay, transition=easing.linear, xScale=finalScale, yScale=finalScale, rotation=finalAngle, onComplete=function()
+						flare.alpha = 0
+					end})
+				end
+
 			end, onFrame=function(completion)
 				--apply spiral parametrics
 				local timeRadius = radius*(1-completion)
@@ -332,6 +355,7 @@ local function performFusion()
 				a.image.y = centerY + timeRadius*math.sin(angle + math.pi)
 				b.image.x = centerX + timeRadius*math.cos(angle)
 				b.image.y = centerY + timeRadius*math.sin(angle)
+
 			end, onComplete=function()
 				--play sound
 				audio.play(sound.fusionEnd)
