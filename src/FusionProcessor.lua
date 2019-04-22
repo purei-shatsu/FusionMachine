@@ -1,10 +1,7 @@
 local CardModel = require("src.CardModel")
+local Database = require("src.Database")
 
 local FusionProcessor = {}
-
-function FusionProcessor.setDatabase(database)
-    FusionProcessor.database = database
-end
 
 function FusionProcessor.performFusion(materials)
     local results = {}
@@ -48,7 +45,7 @@ function FusionProcessor._getFusionResult(a, b)
         math.max(a:getAttack(), b:getAttack()),
         math.max(a:getDefense(), b:getDefense())
     )
-    for data in FusionProcessor.database:nrows(sqlQuery) do
+    for data in Database:nrows(sqlQuery) do
         return CardModel:new(data)
     end
 end

@@ -15,6 +15,12 @@ function Sound.play(name)
     audio.play(sound[name])
 end
 
+function Sound.playWrapper(name)
+    return function()
+        Sound.play(name)
+    end
+end
+
 MemoryCleaner.register(
     function()
         for i, s in pairs(sound) do

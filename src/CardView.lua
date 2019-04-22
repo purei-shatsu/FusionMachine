@@ -25,7 +25,7 @@ function CardView:moveToHand(position)
         self.displayObject,
         {
             time = 250,
-            onStart = playSoundF("move"),
+            onStart = Sound.playWrapper("move"),
             transition = easing.outSine,
             delay = 150 * (position - 1),
             x = finalX

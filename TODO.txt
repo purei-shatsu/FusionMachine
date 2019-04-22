@@ -1,0 +1,15 @@
+Game Rules
+    Very modified:
+        Can only play each zone once per turn (prevents boring semi-safe fusions)
+        Can play a max of 8 stars from hand per turn
+    Slightly modified
+        Can only play one card/fusion per turn (same as original)
+        [MAYBE] Total levels of cards in the deck can't go over a certain value
+            Provavelmente é desnecessário, já é melhor usar cartas com atk 0 pra fazer fusões rápidas
+    Only monsters with atk<=3000 and def<=3000 can go into the main deck (the rest can only be obtained through fusion)
+    Rest are Forbidden Memories rules
+    [TODO] Spells/equips/traps
+
+TODO
+    Effects:
+        Particles

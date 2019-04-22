@@ -4,6 +4,7 @@ local CardView = require("src.CardView")
 
 local Animator = {}
 
+local zero = 1e-5
 local effect = {
     spiral = display.newImageRect(DisplayGroups.effects, "images/spiral.png", 600, 600),
     white = display.newRect(
@@ -132,7 +133,7 @@ function Animator._fuseMaterials(materials, results)
             materialB.displayObject,
             {
                 time = duration,
-                onStart = playSoundF("move"),
+                onStart = Sound.playWrapper("move"),
                 transition = easing.linear,
                 delay = delay,
                 x = materialA.displayObject.x
@@ -339,7 +340,7 @@ function Animator._fuseMaterials(materials, results)
                 materialA.displayObject,
                 {
                     time = duration,
-                    onStart = playSoundF("discard"),
+                    onStart = Sound.playWrapper("discard"),
                     transition = easing.outQuad,
                     delay = delay,
                     y = -jumpHeight,
