@@ -1,3 +1,6 @@
 [submodule "src/Utils"]
 	path = src/Utils
 	url = https://gitea.yfrit.com:2053/yfrit/Utils.git
+[submodule "src/EventSystem"]
+	path = src/EventSystem
+	url = https://gitea.yfrit.com:2053/yfrit/EventSystem
