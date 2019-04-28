@@ -123,6 +123,7 @@ function Animator._fuseMaterials(materials, results)
     Animator._resetDelay()
 
     local materialA = materials[1]
+    local side = materialA:getSide()
     for i, resultModel in ipairs(results) do
         local materialB = materials[i + 1]
 
@@ -292,7 +293,7 @@ function Animator._fuseMaterials(materials, results)
 
             --finish fusion
             Animator._addDelay(duration * 0.3)
-            local resultView = CardView:new(resultModel, 1)
+            local resultView = CardView:new(resultModel, side, 1)
             resultView.displayObject.x = centerX
             resultView.displayObject.y = centerY
             resultView.displayObject.xScale = 1.7

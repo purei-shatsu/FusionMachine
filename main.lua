@@ -6,4 +6,4 @@ require("Utils.Utils")
 local Game = require("Game")
 
 local game = Game:new()
-game:runTurn()
+game:runPlayerTurn()

@@ -19,12 +19,8 @@ function Camera:moveToField(wait)
     self:_moveTo(display.contentHeight / 2, wait)
 end
 
-function Camera:moveToHand1(wait)
-    self:_moveTo(0, wait)
-end
-
-function Camera:moveToHand2(wait)
-    self:_moveTo(display.contentHeight, wait)
+function Camera:moveToHand(side, wait)
+    self:_moveTo(side == 1 and 0 or display.contentHeight, wait)
 end
 
 function Camera:_moveTo(y, wait)

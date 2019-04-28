@@ -23,7 +23,8 @@ Fluxo
     [-] Se clicou na própria carta, muda a battle position
     [-] Jogador clica duas vezes em uma carta sua para mudar a posição
     [x] Jogador clica no botão de passar turno
-    [ ] AI compra cartas até ter 5
+    [x] AI compra cartas até ter 5
+    [-] Cartas da AI ficam escondidas
     [ ] AI faz uma fusão (melhor possível dentro do nível de dificuldade)
     [ ] Para cada carta sua (começando pela mais fraca), ataca a carta mais forte possível do oponente
     [-] Se a carta não atacar e tiver defesa <= ataque, muda ela para defesa

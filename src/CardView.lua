@@ -14,14 +14,16 @@ local CardView =
         width = 177 * scale,
         height = 254 * scale
     },
-    function(self, model, position)
+    function(self, model, side, position)
         self.model = model
-        self.displayObject = self:createDisplayObject(model:getId(), position)
+        self.side = side
+        self:createDisplayObject(model:getId(), position)
     end
 )
 
 function CardView:moveToHand(position)
     local finalX = self:_getXAtPosition(position)
+    local finalY = self:_getYAtPosition(self.side, position)
     transition.to(
         self.displayObject,
         {
@@ -30,7 +32,7 @@ function CardView:moveToHand(position)
             transition = easing.outSine,
             delay = 150 * (position - 1),
             x = finalX,
-            y = display.contentHeight - self.displayObject.height / 2
+            y = finalY
         }
     )
     self.materialNumber.displayGroup.x = finalX - self.displayObject.width / 2 + 22
@@ -38,9 +40,11 @@ end
 
 function CardView:createDisplayObject(id, position)
     local displayObject = display.newImageRect(DisplayGroups.cards, "pics/" .. id .. ".jpg", self.width, self.height)
-    local finalX = display.contentCenterX + (position - 3) * displayObject.width
+    self.displayObject = displayObject
+    local finalX = self:_getXAtPosition(position)
+    local finalY = self:_getYAtPosition(self.side, position)
     displayObject.x = finalX + display.contentWidth * 1.5
-    displayObject.y = display.contentHeight - displayObject.height / 2
+    displayObject.y = finalY
 
     --fusion material number
     local materialNumber = {}
@@ -59,9 +63,9 @@ function CardView:createDisplayObject(id, position)
     self.materialNumber = materialNumber
     self:_hideMaterialNumber()
 
-    displayObject:addEventListener("touch", self)
-
-    return displayObject
+    if self.side == 1 then
+        displayObject:addEventListener("touch", self)
+    end
 end
 
 function CardView:touch(event)
@@ -154,6 +158,10 @@ function CardView:summon(position)
     self.displayObject:toBack()
 end
 
+function CardView:getSide()
+    return self.side
+end
+
 function CardView:_hideMaterialNumber()
     self.materialNumber.text.alpha = 0
     self.materialNumber.rect.alpha = 0
@@ -166,6 +174,10 @@ end
 
 function CardView:_getXAtPosition(position)
     return display.contentCenterX + (position - 3) * self.displayObject.width
+end
+
+function CardView:_getYAtPosition(position)
+    return display.contentHeight - (self.side == 1 and 0.5 or 3.5) * self.displayObject.height
 end
 
 return CardView

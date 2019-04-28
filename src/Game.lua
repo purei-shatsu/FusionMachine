@@ -37,13 +37,16 @@ local Game =
         }
     },
     function(self, database)
-        self.locator = CardLocator:new()
-        self.locator:createLocation(
-            "field",
-            {
-                allowHoles = true
-            }
-        )
+        self.locator = {}
+        for side = 1, 2 do
+            self.locator[side] = CardLocator:new()
+            self.locator[side]:createLocation(
+                "field",
+                {
+                    allowHoles = true
+                }
+            )
+        end
 
         self.materials = {}
         self.camera = Camera:new()
@@ -64,29 +67,39 @@ local Game =
     Eventer
 )
 
-function Game:runTurn()
+function Game:runPlayerTurn()
     coroutine.wrap(
         function()
-            self.camera:moveToHand1()
-            self:_moveHandCardsBack()
-            self:drawCardsUntilFive()
+            self.camera:moveToHand(1, true)
+            self:_moveHandCardsBack(1)
+            self:_drawCardsUntilFive(1)
         end
     )()
 end
 
-function Game:drawCardsUntilFive()
+function Game:runAITurn()
+    coroutine.wrap(
+        function()
+            self.camera:moveToHand(2, true)
+            self:_moveHandCardsBack(2)
+            self:_drawCardsUntilFive(2)
+        end
+    )()
+end
+
+function Game:_drawCardsUntilFive(side)
     --select five non-special cards for starting hand
-    local amount = 5 - self.locator:getLocationCount("hand")
+    local amount = 5 - self.locator[side]:getLocationCount("hand")
     for cardData in Database:nrows(
         string.format(
             "select * from datas as d inner join texts as t on d.id==t.id and level<=4 order by random() limit %d",
             amount
         )
     ) do
-        local position = self.locator:getLocationCount("hand") + 1
+        local position = self.locator[side]:getLocationCount("hand") + 1
         local cardModel = CardModel:new(cardData)
-        local cardView = CardView:new(cardModel, position)
-        self.locator:insertCard(cardView, "hand")
+        local cardView = CardView:new(cardModel, side, position)
+        self.locator[side]:insertCard(cardView, "hand")
         cardView:moveToHand(position)
     end
 end
@@ -102,11 +115,12 @@ function Game:_fuseSelectedMaterials(position)
         modelMaterials[i] = cardView:getModel()
     end
     local results = FusionProcessor.performFusion(modelMaterials)
-    local hand = self.locator:getCardsInLocation("hand")
+    local side = self.materials[1]:getSide()
+    local hand = self.locator[side]:getCardsInLocation("hand")
 
     --remove cards from locator
     for _, card in ipairs(self.materials) do
-        self.locator:removeCard(card)
+        self.locator[side]:removeCard(card)
     end
 
     --remove cards from materials
@@ -126,7 +140,8 @@ function Game:_fuseSelectedMaterials(position)
 end
 
 function Game:_finishFusion(finalCard, position)
-    self.locator:insertCard(finalCard, "field", position)
+    local side = finalCard:getSide()
+    self.locator[side]:insertCard(finalCard, "field", position)
     finalCard:summon(position)
 
     self.camera:moveToField()
@@ -137,21 +152,25 @@ function Game:_onFieldSpaceClicked(side, position)
         return
     end
 
-    --add selected card to materials
-    local card = self.locator:getCardsInLocation("field")[position]
-    if card then
-        table.insert(self.materials, 1, card)
-    end
+    if side == 1 then
+        --add selected card to materials
+        local card = self.locator[side]:getCardsInLocation("field")[position]
+        if card then
+            table.insert(self.materials, 1, card)
+        end
 
-    self:_fuseSelectedMaterials(position)
+        self:_fuseSelectedMaterials(position)
+    else
+        --TODO
+    end
 end
 
 function Game:_onEndTurnButtonClicked(side, position)
-    self:runTurn()
+    self:runAITurn()
 end
 
-function Game:_moveHandCardsBack()
-    for position, card in pairs(self.locator:getCardsInLocation("hand")) do
+function Game:_moveHandCardsBack(side)
+    for position, card in pairs(self.locator[side]:getCardsInLocation("hand")) do
         card:moveToHand(position)
     end
 end
