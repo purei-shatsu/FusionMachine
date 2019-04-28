@@ -21,10 +21,11 @@ local CardView =
     end
 )
 
-function CardView:moveToHand(position)
+function CardView:moveToHand(position, wait)
     local finalX = self:_getXAtPosition(position)
     local finalY = self:_getYAtPosition(self.side, position)
-    transition.to(
+    self.materialNumber.displayGroup.x = finalX - self.displayObject.width / 2 + 22
+    Transition.to(
         self.displayObject,
         {
             time = 250,
@@ -33,9 +34,9 @@ function CardView:moveToHand(position)
             delay = 150 * (position - 1),
             x = finalX,
             y = finalY
-        }
+        },
+        wait
     )
-    self.materialNumber.displayGroup.x = finalX - self.displayObject.width / 2 + 22
 end
 
 function CardView:createDisplayObject(id, position)
@@ -69,7 +70,7 @@ function CardView:createDisplayObject(id, position)
 end
 
 function CardView:touch(event)
-    if event.phase ~= "began" then
+    if event.phase ~= "began" or not IS_PLAYER_TURN then
         return
     end
 
@@ -151,7 +152,7 @@ function CardView:summon(position)
             time = 400,
             transition = easing.inOutSine,
             x = self:_getXAtPosition(position),
-            y = self.displayObject.height / 2
+            y = self.side == 1 and self.displayObject.height / 2 or -self.displayObject.height / 2
         },
         true
     )

@@ -7,7 +7,7 @@ local EndTurnButton =
         size = 100
     },
     function(self)
-        self.rect = display.newRect(1122, display.contentHeight / 2, self.size, self.size)
+        self.rect = display.newRect(1122, display.contentHeight / 2 - self.size / 2, self.size, self.size)
         self.rect:addEventListener("touch", self)
     end
 )

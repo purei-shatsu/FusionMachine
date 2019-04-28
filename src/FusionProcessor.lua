@@ -6,10 +6,10 @@ local FusionProcessor = {}
 function FusionProcessor.performFusion(materials)
     local results = {}
 
-    local materialA = materials[1]
+    local materialA = materials[1]:getModel()
     for i = 2, #materials do
         --use second material as result if fusion failed
-        local materialB = materials[i]
+        local materialB = materials[i]:getModel()
         local result = FusionProcessor._getFusionResult(materialA, materialB) or materialB
         table.insert(results, result)
 

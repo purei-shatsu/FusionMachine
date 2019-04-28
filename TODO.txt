@@ -10,21 +10,24 @@ Game Rules
     Rest are Forbidden Memories rules
     [TODO] Spells/equips/traps
 
-Fluxo
-    [x] Jogador compra cartas até ter 5
-    [x] Jogador clica em cartas da mão para fundir
-    [x] Jogador clica em um espaço (ou carta) no campo para jogar
-    [x] Fusão ocorre, e resultado é jogado no lugar clicado
-    [x] Se clicou em uma carta, essa carta é colocada como primeiro material da fusão
-    [ ] Jogador clica em uma carta sua
-    [ ] Jogador clica em um espaço (ou carta) do oponente
-    [-] Se clicou em um espaço, causa dano direto
-    [ ] Se clicou em uma carta, as duas cartas batalham
-    [-] Se clicou na própria carta, muda a battle position
-    [-] Jogador clica duas vezes em uma carta sua para mudar a posição
-    [x] Jogador clica no botão de passar turno
-    [x] AI compra cartas até ter 5
-    [-] Cartas da AI ficam escondidas
-    [ ] AI faz uma fusão (melhor possível dentro do nível de dificuldade)
-    [ ] Para cada carta sua (começando pela mais fraca), ataca a carta mais forte possível do oponente
-    [-] Se a carta não atacar e tiver defesa <= ataque, muda ela para defesa
+TODO
+    Fluxo
+        [x] Jogador compra cartas até ter 5
+        [x] Jogador clica em cartas da mão para fundir
+        [x] Jogador clica em um espaço (ou carta) no campo para jogar
+        [x] Fusão ocorre, e resultado é jogado no lugar clicado
+        [x] Se clicou em uma carta, essa carta é colocada como primeiro material da fusão
+        [ ] Jogador clica em uma carta sua
+        [ ] Jogador clica em um espaço (ou carta) do oponente
+        [-] Se clicou em um espaço, causa dano direto
+        [ ] Se clicou em uma carta, as duas cartas batalham
+        [-] Se clicou na própria carta, muda a battle position
+        [-] Jogador clica duas vezes em uma carta sua para mudar a posição
+        [x] Jogador clica no botão de passar turno
+        [x] AI compra cartas até ter 5
+        [-] Cartas da AI ficam escondidas
+        [x] AI faz uma fusão (melhor possível dentro do nível de dificuldade)
+        [ ] Para cada carta sua (começando pela mais fraca), ataca a carta mais forte possível do oponente
+        [-] Se a carta não atacar e tiver defesa <= ataque, muda ela para defesa
+    [ ] Colocar músicas
+        [ ] Troca automaticamente para uma outra aleatória

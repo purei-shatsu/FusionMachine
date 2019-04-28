@@ -1,6 +1,7 @@
 local Sound = require("Sound")
 local DisplayGroups = require("DisplayGroups")
 local CardView = require("CardView")
+local Camera = require("Camera")
 
 local Animator = {}
 
@@ -66,8 +67,10 @@ function Animator._hideNonMaterials(hand, materials)
 
     --move non-materials off-screen
     if #nonMaterials > 0 then
-        local bottomY = display.contentHeight + nonMaterials[1].height / 2
+        local bottomY = display.contentHeight + 0.5 * nonMaterials[1].height
+        local topY = -display.contentHeight - 0.5 * nonMaterials[1].height
         local duration = 200
+        local side = nonMaterials[1]:getSide()
         for _, card in ipairs(nonMaterials) do
             transition.to(
                 card.displayObject,
@@ -75,7 +78,7 @@ function Animator._hideNonMaterials(hand, materials)
                     time = duration,
                     transition = easing.inSine,
                     delay = delay,
-                    y = bottomY
+                    y = side == 1 and bottomY or topY
                 }
             )
         end
@@ -85,7 +88,8 @@ end
 
 function Animator._moveMaterialsToStartPosition(materials)
     local duration = 400
-
+    local side = materials[1]:getSide()
+    local centerY = display.contentCenterY + Camera.getY()
     --move first material to correct position
     transition.to(
         materials[1].displayObject,
@@ -94,7 +98,7 @@ function Animator._moveMaterialsToStartPosition(materials)
             transition = easing.inOutSine,
             delay = delay,
             x = materials[1].width / 2,
-            y = display.contentCenterY
+            y = centerY
         }
     )
     materials[1].displayObject:toFront()
@@ -110,20 +114,24 @@ function Animator._moveMaterialsToStartPosition(materials)
                 transition = easing.inOutSine,
                 delay = delay,
                 x = display.contentWidth - card.width * (0.5 + (#materials - i) / 3) + 150,
-                y = display.contentCenterY
+                y = centerY
             }
         )
     end
 end
 
 function Animator._fuseMaterials(materials, results)
-    local bottomY = display.contentHeight + materials[1].height / 2
+    effect.white.y = display.contentCenterY + Camera.getY()
+
+    local bottomY = display.contentHeight + materials[1].height / 2 + Camera.getY()
+    local contentCenterY = display.contentCenterY + Camera.getY()
     timer.performWithDelay(400 + delay, resumeCoroutine)
     coroutine.yield()
     Animator._resetDelay()
 
     local materialA = materials[1]
     local side = materialA:getSide()
+
     for i, resultModel in ipairs(results) do
         local materialB = materials[i + 1]
 
@@ -355,7 +363,7 @@ function Animator._fuseMaterials(materials, results)
             Animator._addDelay(duration)
             local a = jumpHeight / (duration * duration)
             local b = -2 * jumpHeight / duration
-            local c = display.contentCenterY - bottomY
+            local c = contentCenterY - bottomY
             local x1 = (-b + (b * b - 4 * a * c) ^ 0.5) / (2 * a)
             local x2 = (-b - (b * b - 4 * a * c) ^ 0.5) / (2 * a)
             duration = math.max(x1, x2) - duration

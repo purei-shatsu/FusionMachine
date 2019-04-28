@@ -34,7 +34,8 @@ local Game =
                     self:_onMaterialUnmarked(...)
                 end
             }
-        }
+        },
+        aiDifficulty = 2
     },
     function(self, database)
         self.locator = {}
@@ -49,9 +50,8 @@ local Game =
         end
 
         self.materials = {}
-        self.camera = Camera:new()
         for _, displayGroup in pairs(DisplayGroups) do
-            self.camera:insert(displayGroup)
+            Camera.insert(displayGroup)
         end
 
         self.fieldSpaces = {}
@@ -70,7 +70,8 @@ local Game =
 function Game:runPlayerTurn()
     coroutine.wrap(
         function()
-            self.camera:moveToHand(1, true)
+            IS_PLAYER_TURN = true
+            Camera.moveToHand(1, true)
             self:_moveHandCardsBack(1)
             self:_drawCardsUntilFive(1)
         end
@@ -80,9 +81,11 @@ end
 function Game:runAITurn()
     coroutine.wrap(
         function()
-            self.camera:moveToHand(2, true)
+            IS_PLAYER_TURN = false
+            Camera.moveToHand(2, true)
             self:_moveHandCardsBack(2)
             self:_drawCardsUntilFive(2)
+            self:_playAIFusion()
         end
     )()
 end
@@ -92,7 +95,7 @@ function Game:_drawCardsUntilFive(side)
     local amount = 5 - self.locator[side]:getLocationCount("hand")
     for cardData in Database:nrows(
         string.format(
-            "select * from datas as d inner join texts as t on d.id==t.id and level<=4 order by random() limit %d",
+            "select * from datas as d inner join texts as t on d.id==t.id and atk<=1000 and def<=1000 order by random() limit %d",
             amount
         )
     ) do
@@ -100,22 +103,26 @@ function Game:_drawCardsUntilFive(side)
         local cardModel = CardModel:new(cardData)
         local cardView = CardView:new(cardModel, side, position)
         self.locator[side]:insertCard(cardView, "hand")
-        cardView:moveToHand(position)
+        cardView:moveToHand(position, position == 5)
     end
 end
 
 function Game:_fuseSelectedMaterials(position)
     Sound.play("confirm")
 
+    --add card in location to materials
+    local side = self.materials[1]:getSide()
+    local card = self.locator[side]:getCardsInLocation("field")[position]
+    if card then
+        table.insert(self.materials, 1, card)
+    end
+
     --prepare Animator parameters
-    local modelMaterials = {}
     local viewMaterials = {}
     for i, cardView in ipairs(self.materials) do
         viewMaterials[i] = cardView
-        modelMaterials[i] = cardView:getModel()
     end
-    local results = FusionProcessor.performFusion(modelMaterials)
-    local side = self.materials[1]:getSide()
+    local results = FusionProcessor.performFusion(self.materials)
     local hand = self.locator[side]:getCardsInLocation("hand")
 
     --remove cards from locator
@@ -144,7 +151,11 @@ function Game:_finishFusion(finalCard, position)
     self.locator[side]:insertCard(finalCard, "field", position)
     finalCard:summon(position)
 
-    self.camera:moveToField()
+    Camera.moveToField()
+
+    if not IS_PLAYER_TURN then
+        self:_makeAIAttacks()
+    end
 end
 
 function Game:_onFieldSpaceClicked(side, position)
@@ -153,12 +164,6 @@ function Game:_onFieldSpaceClicked(side, position)
     end
 
     if side == 1 then
-        --add selected card to materials
-        local card = self.locator[side]:getCardsInLocation("field")[position]
-        if card then
-            table.insert(self.materials, 1, card)
-        end
-
         self:_fuseSelectedMaterials(position)
     else
         --TODO
@@ -193,6 +198,125 @@ function Game:_onMaterialUnmarked(card)
     for i, m in ipairs(self.materials) do
         m:setMaterialNumber(i)
     end
+end
+
+function Game:_isFusionBetter(resultA, materialsA, replacesA, resultB, materialsB, replacesB)
+    --if either are nil, return the other
+    if resultB == nil then
+        return true
+    end
+    if resultA == nil then
+        return false
+    end
+
+    local atkA = resultA:getAttack()
+    local atkB = resultB:getAttack()
+    local defA = resultA:getDefense()
+    local defB = resultB:getDefense()
+    local amountA = #materialsA
+    local amountB = #materialsB
+
+    --more attack wins
+    if atkA > atkB then
+        return true
+    end
+    if atkA < atkB then
+        return false
+    end
+
+    --more defense wins
+    if defA > defB then
+        return true
+    end
+    if defA < defB then
+        return false
+    end
+
+    --not replacing wins
+    if not replacesA and replacesB then
+        return true
+    end
+    if replacesA and not replacesB then
+        return false
+    end
+
+    --less materials wins
+    if amountA < amountB then
+        return true
+    end
+    if amountA > amountB then
+        return false
+    end
+
+    --if tied everything, A wins
+    return true
+end
+
+function Game:_playAIFusion()
+    print("self.materials", #self.materials)
+
+    --choose best fusion
+    local hand = self.locator[2]:getCardsInLocation("hand")
+    local field = self.locator[2]:getCardsInLocation("field")
+    local emptyPosition
+    for position = 1, 5 do
+        if not field[position] then
+            emptyPosition = position
+            break
+        end
+    end
+    local bestResult, bestMaterials, bestPosition, bestReplace
+    for materials in permutations(hand, 1, self.aiDifficulty) do
+        --check result if playing on an empty position
+        if emptyPosition then
+            local results = FusionProcessor.performFusion(materials)
+            local result = results[#results] or materials[1]:getModel()
+            if self:_isFusionBetter(result, materials, false, bestResult, bestMaterials, bestReplace) then
+                bestResult = result
+                bestMaterials = materials
+                bestPosition = emptyPosition
+                bestReplace = false
+            end
+        end
+
+        --check results if playing over cards on the field
+        for position, card in pairs(field) do
+            --add card to materials
+            local materialsWithField = {card}
+            for i, m in ipairs(materials) do
+                materialsWithField[i + 1] = m
+            end
+
+            --check result
+            local resultsWithField = FusionProcessor.performFusion(materialsWithField)
+            local resultWithField = resultsWithField[#resultsWithField]
+            if self:_isFusionBetter(resultWithField, materialsWithField, true, bestResult, bestMaterials, bestReplace) then
+                bestResult = resultWithField
+                bestMaterials = materialsWithField
+                bestPosition = position
+                bestReplace = true
+            end
+        end
+    end
+
+    --remove card on field from materials
+    if bestReplace then
+        table.remove(bestMaterials, 1)
+    end
+
+    --selected cards as materials
+    for _, card in ipairs(bestMaterials) do
+        card:markAsMaterial()
+    end
+
+    --fuse
+    self:_fuseSelectedMaterials(bestPosition)
+end
+
+function Game:_makeAIAttacks()
+    print("attack")
+
+    self:runPlayerTurn()
 end
 
 return Game

@@ -12,7 +12,10 @@ function Transition.to(object, params, wait)
             if oldOnComplete then
                 oldOnComplete(...)
             end
-            coroutine.resume(co)
+            local ok, errors = coroutine.resume(co)
+            if not ok then
+                error("\n" .. errors)
+            end
         end
     end
 

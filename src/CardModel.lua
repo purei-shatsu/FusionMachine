@@ -5,6 +5,7 @@ local CardModel =
     {},
     function(self, data)
         self.data = data
+        self.class = "CardModel"
     end
 )
 
