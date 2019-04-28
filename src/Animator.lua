@@ -126,8 +126,9 @@ function Animator._fuseMaterials(materials, results)
     for i, resultModel in ipairs(results) do
         local materialB = materials[i + 1]
 
-        --send left material to back
-        materialA.displayObject:toBack()
+        --bring both materials to front
+        materialA.displayObject:toFront()
+        materialB.displayObject:toFront()
 
         --move right material towards left material
         local duration = (materialB.displayObject.x - materialA.displayObject.x) / 5
