@@ -1,4 +1,4 @@
-local MemoryCleaner = require("src.MemoryCleaner")
+local MemoryCleaner = require("MemoryCleaner")
 
 local Sound = {}
 

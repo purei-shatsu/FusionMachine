@@ -13,3 +13,21 @@ Game Rules
 TODO
     Effects:
         Particles
+
+Fluxo
+    [x] Jogador compra cartas até ter 5
+    [x] Jogador clica em cartas da mão para fundir
+    [x] Jogador clica em um espaço (ou carta) no campo para jogar
+    [x] Fusão ocorre, e resultado é jogado no lugar clicado
+    [ ] Se clicou em uma carta, essa carta é colocada como primeiro material da fusão
+    [ ] Jogador clica em uma carta sua
+    [ ] Jogador clica em espaço (ou carta) do oponente
+    [-] Se clicou em um espaço, causa dano direto
+    [ ] Se clicou em uma carta, as duas cartas batalham
+    [-] Se clicou na própria carta, muda a battle position
+    [-] Jogador clica duas vezes em uma carta sua para mudar a posição
+    [ ] Jogador clica no botão de passar turno
+    [ ] AI compra cartas até ter 5
+    [ ] AI faz uma fusão (melhor possível dentro do nível de dificuldade)
+    [ ] Para cada carta sua (começando pela mais fraca), ataca a carta mais forte possível do oponente
+    [-] Se a carta não atacar e tiver defesa <= ataque, muda ela para defesa

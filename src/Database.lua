@@ -1,5 +1,5 @@
 local sqlite3 = require("sqlite3")
-local MemoryCleaner = require("src.MemoryCleaner")
+local MemoryCleaner = require("MemoryCleaner")
 
 local path = system.pathForFile("cards.cdb")
 local Database = sqlite3.open(path)

@@ -1,5 +1,5 @@
-local CardModel = require("src.CardModel")
-local Database = require("src.Database")
+local CardModel = require("CardModel")
+local Database = require("Database")
 
 local FusionProcessor = {}
 

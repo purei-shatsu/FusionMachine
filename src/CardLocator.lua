@@ -2,7 +2,7 @@
     CardLocator is a class that stores where every card is.
     It keeps their locations and positions consitent with each other.
 --]]
-local Class = require("src.Utils.Class")
+local Class = require("Utils.Class")
 
 local CardLocator =
     Class.new(

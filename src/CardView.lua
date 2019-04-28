@@ -1,9 +1,11 @@
 --[[
     Documentation
 --]]
-local Class = require("src.Utils.Class")
-local Sound = require("src.Sound")
-local DisplayGroups = require("src.DisplayGroups")
+local Class = require("Utils.Class")
+local Sound = require("Sound")
+local DisplayGroups = require("DisplayGroups")
+local Transition = require("Transition")
+local Event = require("EventSystem.Event")
 
 local scale = 1.5
 local CardView =
@@ -12,15 +14,14 @@ local CardView =
         width = 177 * scale,
         height = 254 * scale
     },
-    function(self, model, position, materialList)
+    function(self, model, position)
         self.model = model
-        self.materialList = materialList
         self.displayObject = self:createDisplayObject(model:getId(), position)
     end
 )
 
 function CardView:moveToHand(position)
-    local finalX = display.contentCenterX + (position - 3) * self.displayObject.width
+    local finalX = self:_getXAtPosition(position)
     transition.to(
         self.displayObject,
         {
@@ -28,33 +29,31 @@ function CardView:moveToHand(position)
             onStart = Sound.playWrapper("move"),
             transition = easing.outSine,
             delay = 150 * (position - 1),
-            x = finalX
+            x = finalX,
+            y = display.contentHeight - self.displayObject.height / 2
         }
     )
+    self.materialNumber.displayGroup.x = finalX - self.displayObject.width / 2 + 22
 end
 
 function CardView:createDisplayObject(id, position)
     local displayObject = display.newImageRect(DisplayGroups.cards, "pics/" .. id .. ".jpg", self.width, self.height)
     local finalX = display.contentCenterX + (position - 3) * displayObject.width
     displayObject.x = finalX + display.contentWidth * 1.5
-    displayObject.y = display.contentCenterY
+    displayObject.y = display.contentHeight - displayObject.height / 2
 
-    -- --fusion material number
+    --fusion material number
     local materialNumber = {}
-    materialNumber.rect =
-        display.newRoundedRect(
-        DisplayGroups.ui,
-        finalX - displayObject.width / 2 + 22,
-        displayObject.y - displayObject.height / 2,
-        50,
-        30,
-        5
-    )
+    materialNumber.displayGroup = display.newGroup()
+    materialNumber.displayGroup.x = finalX - displayObject.width / 2 + 22
+    materialNumber.displayGroup.y = displayObject.y - displayObject.height / 2
+    DisplayGroups.ui:insert(materialNumber.displayGroup)
+
+    materialNumber.rect = display.newRoundedRect(materialNumber.displayGroup, 0, 0, 50, 30, 5)
     materialNumber.rect.strokeWidth = 4
     materialNumber.rect:setFillColor(0.15)
     materialNumber.rect:setStrokeColor(0.63)
-    materialNumber.text =
-        display.newText(DisplayGroups.ui, position, materialNumber.rect.x, materialNumber.rect.y, native.systemFont, 36)
+    materialNumber.text = display.newText(materialNumber.displayGroup, position, 0, 0, native.systemFont, 36)
     materialNumber.text:setFillColor(0.38, 0.5, 0.97)
     materialNumber.text:setStrokeColor(0.01, 0.25, 0.49)
     self.materialNumber = materialNumber
@@ -70,6 +69,11 @@ function CardView:touch(event)
         return
     end
 
+    --can't select a summoned card for fusion
+    if self.summoned then
+        return
+    end
+
     Sound.play("material")
     if self.isMaterial then
         self:unmarkAsMaterial()
@@ -80,32 +84,25 @@ function CardView:touch(event)
 end
 
 function CardView:markAsMaterial()
+    Event.broadcast("MarkedAsMaterial", self)
+
     --mark
-    table.insert(self.materialList, self)
-    self.materialNumber.text.text = #self.materialList
     self:_showMaterialNumber()
     self.displayObject.y = self.displayObject.y - 20
 end
 
 function CardView:unmarkAsMaterial(dontMove)
+    Event.broadcast("UnmarkedAsMaterial", self)
+
     --unmark
     self:_hideMaterialNumber()
     if not dontMove then
         self.displayObject.y = self.displayObject.y + 20
     end
+end
 
-    --remove from table
-    for i = #self.materialList, 1, -1 do
-        if self.materialList[i] == self then
-            table.remove(self.materialList, i)
-            break
-        end
-    end
-
-    --update texts
-    for i, m in ipairs(self.materialList) do
-        m.materialNumber.text.text = i
-    end
+function CardView:setMaterialNumber(text)
+    self.materialNumber.text.text = text
 end
 
 function CardView:getCardRotationPath(angle)
@@ -142,6 +139,21 @@ function CardView:getModel()
     return self.model
 end
 
+function CardView:summon(position)
+    self.summoned = true
+    Transition.to(
+        self.displayObject,
+        {
+            time = 400,
+            transition = easing.inOutSine,
+            x = self:_getXAtPosition(position),
+            y = self.displayObject.height / 2
+        },
+        true
+    )
+    self.displayObject:toBack()
+end
+
 function CardView:_hideMaterialNumber()
     self.materialNumber.text.alpha = 0
     self.materialNumber.rect.alpha = 0
@@ -150,6 +162,10 @@ end
 function CardView:_showMaterialNumber()
     self.materialNumber.text.alpha = 1
     self.materialNumber.rect.alpha = 1
+end
+
+function CardView:_getXAtPosition(position)
+    return display.contentCenterX + (position - 3) * self.displayObject.width
 end
 
 return CardView

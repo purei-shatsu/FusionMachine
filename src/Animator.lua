@@ -1,6 +1,6 @@
-local Sound = require("src.Sound")
-local DisplayGroups = require("src.DisplayGroups")
-local CardView = require("src.CardView")
+local Sound = require("Sound")
+local DisplayGroups = require("DisplayGroups")
+local CardView = require("CardView")
 
 local Animator = {}
 
@@ -26,13 +26,14 @@ end
 
 local resumeCoroutine
 local delay
-function Animator.performFusion(hand, materials, results)
+function Animator.performFusion(hand, materials, results, callback)
     resumeCoroutine =
         coroutine.wrap(
         function()
             Animator._hideNonMaterials(hand, materials)
             Animator._moveMaterialsToStartPosition(materials)
-            Animator._fuseMaterials(materials, results)
+            local finalCard = Animator._fuseMaterials(materials, results)
+            callback(finalCard)
         end
     )
     resumeCoroutine()
@@ -96,6 +97,7 @@ function Animator._moveMaterialsToStartPosition(materials)
             y = display.contentCenterY
         }
     )
+    materials[1].displayObject:toFront()
 
     --move other to correct positions, putting first cards on front
     for i = #materials, 2, -1 do
@@ -283,14 +285,13 @@ function Animator._fuseMaterials(materials, results)
             local duration = 500
             transition.to(effect.white, {time = duration, transition = easing.linear, alpha = 0})
 
-            --TODO actually destroy materials
-            materialA.displayObject.y = bottomY
-            materialB.displayObject.y = bottomY
+            --destroy materials
+            materialA.displayObject:removeSelf()
+            materialB.displayObject:removeSelf()
 
             --finish fusion
             Animator._addDelay(duration * 0.3)
-            --TODO this materialList as an empty table will bug things, it shouldn't even be on CardView
-            local resultView = CardView:new(resultModel, 1, {})
+            local resultView = CardView:new(resultModel, 1)
             resultView.displayObject.x = centerX
             resultView.displayObject.y = centerY
             resultView.displayObject.xScale = 1.7
@@ -386,6 +387,9 @@ function Animator._fuseMaterials(materials, results)
             materialA = materialB
         end
     end
+
+    --materialA will contain the last remaining card
+    return materialA
 end
 
 function Animator._executeEveryFrame(param)

@@ -1,4 +1,4 @@
-local Class = require("src.Utils.Class")
+local Class = require("Utils.Class")
 
 local CardModel =
     Class.new(
