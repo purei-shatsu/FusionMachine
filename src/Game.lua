@@ -95,7 +95,7 @@ function Game:_drawCardsUntilFive(side)
     local amount = 5 - self.locator[side]:getLocationCount("hand")
     for cardData in Database:nrows(
         string.format(
-            "select * from datas as d inner join texts as t on d.id==t.id and atk<=1000 and def<=1000 order by random() limit %d",
+            "select * from datas as d inner join texts as t on d.id==t.id and level<=4 order by random() limit %d",
             amount
         )
     ) do

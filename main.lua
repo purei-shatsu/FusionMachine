@@ -1,5 +1,4 @@
---TODO use a relative path instead of this
-package.path = "C:\\Users\\lucas\\Documents\\Corona Projects\\Fusion Machine\\src\\?.lua;" .. package.path
+package.path = string.format("%s\\src\\?.lua;%s", system.pathForFile(nil, system.ResourcesDirectory), package.path)
 
 require("Utils.SmartRequire")
 require("Utils.Utils")
