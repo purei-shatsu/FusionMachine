@@ -42,7 +42,14 @@ function CardLocator:insertCard(card, locationName, position)
         --snap to next position if would create a hole
         position = math.min(position, #location + 1)
     end
-    table.insert(location, position, card)
+
+    if not location[position] then
+        --if space is empty, set it directly
+        location[position] = card
+    else
+        --otherwise, use a table insert
+        table.insert(location, position, card)
+    end
 
     --update card location
     self.card[card] = {
@@ -78,7 +85,11 @@ function CardLocator:removeCard(card)
 
         --decrement count
         self.count[locationName] = self.count[locationName] - 1
+
+        return true
     end
+
+    return false
 end
 
 function CardLocator:getCardLocation(card)
