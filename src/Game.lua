@@ -32,10 +32,13 @@ local Game =
                 end,
                 UnmarkedAsMaterial = function(self, _, ...)
                     self:_onMaterialUnmarked(...)
+                end,
+                SelectedOnField = function(self, _, ...)
+                    self:_onSelectedOnField(...)
                 end
             }
         },
-        aiDifficulty = 2
+        aiDifficulty = 1
     },
     function(self, database)
         self.locator = {}
@@ -70,6 +73,7 @@ local Game =
 function Game:runPlayerTurn()
     coroutine.wrap(
         function()
+            self.attacker = nil
             IS_PLAYER_TURN = true
             Camera.moveToHand(1, true)
             self:_moveHandCardsBack(1)
@@ -142,6 +146,11 @@ function Game:_fuseSelectedMaterials(position)
         results,
         function(finalCard)
             self:_finishFusion(finalCard, position)
+
+            --print cards in location
+            for i, card in pairs(self.locator[side]:getCardsInLocation("field")) do
+                print(i, card:getModel():getName())
+            end
         end
     )
 end
@@ -253,8 +262,6 @@ function Game:_isFusionBetter(resultA, materialsA, replacesA, resultB, materials
 end
 
 function Game:_playAIFusion()
-    print("self.materials", #self.materials)
-
     --choose best fusion
     local hand = self.locator[2]:getCardsInLocation("hand")
     local field = self.locator[2]:getCardsInLocation("field")
@@ -265,6 +272,7 @@ function Game:_playAIFusion()
             break
         end
     end
+    print("emptyPosition", emptyPosition)
     local bestResult, bestMaterials, bestPosition, bestReplace
     for materials in permutations(hand, 1, self.aiDifficulty) do
         --check result if playing on an empty position
@@ -299,7 +307,7 @@ function Game:_playAIFusion()
         end
     end
 
-    --remove card on field from materials
+    --remove card on field from materials and table
     if bestReplace then
         table.remove(bestMaterials, 1)
     end
@@ -314,9 +322,49 @@ function Game:_playAIFusion()
 end
 
 function Game:_makeAIAttacks()
-    print("attack")
+    --TODO attack
 
     self:runPlayerTurn()
+end
+
+function Game:_onSelectedOnField(card)
+    if card:getSide() == 1 then
+        --card belongs to player, set it as the attacker
+        Sound.play("confirm")
+        self.attacker = card
+    elseif self.attacker then
+        --card belongs to AI, finish attack if already selected an attacker
+        Sound.play("confirm")
+        local attacked = card
+        self:_attack(self.attacker, attacked)
+        self.attacker = nil
+    end
+end
+
+function Game:_attack(cardA, cardB)
+    local modelA = cardA:getModel()
+    local modelB = cardB:getModel()
+    local defeated = {}
+
+    --determine which cards were defeated
+    local atkA = modelA:getAttack()
+    local atkB = modelB:getAttack()
+    if atkA <= atkB then
+        defeated[#defeated + 1] = cardA
+    end
+    if atkB <= atkA then
+        defeated[#defeated + 1] = cardB
+    end
+
+    --destroy defeated cards
+    for _, card in ipairs(defeated) do
+        --remove from locator
+        local side = card:getSide()
+        self.locator[side]:removeCard(card)
+
+        --destroy display object
+        card.displayObject:removeSelf()
+    end
 end
 
 return Game

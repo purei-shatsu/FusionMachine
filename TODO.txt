@@ -10,6 +10,13 @@ Game Rules
     Rest are Forbidden Memories rules
     [TODO] Spells/equips/traps
 
+Traps
+    Traps de battle phase ou de summon, mas com efeitos mais relevantes (ativação automática):
+    Mirror Force
+    Magic Cylinder
+    Torrential Tribute
+    Trap Hole(s)
+
 TODO
     Fluxo
         [x] Jogador compra cartas até ter 5
@@ -17,10 +24,10 @@ TODO
         [x] Jogador clica em um espaço (ou carta) no campo para jogar
         [x] Fusão ocorre, e resultado é jogado no lugar clicado
         [x] Se clicou em uma carta, essa carta é colocada como primeiro material da fusão
-        [ ] Jogador clica em uma carta sua
-        [ ] Jogador clica em um espaço (ou carta) do oponente
+        [x] Jogador clica em uma carta sua
+        [x] Jogador clica em um espaço (ou carta) do oponente
         [-] Se clicou em um espaço, causa dano direto
-        [ ] Se clicou em uma carta, as duas cartas batalham
+        [x] Se clicou em uma carta, as duas cartas batalham
         [-] Se clicou na própria carta, muda a battle position
         [-] Jogador clica duas vezes em uma carta sua para mudar a posição
         [x] Jogador clica no botão de passar turno

@@ -1,6 +1,3 @@
---[[
-    Documentation
---]]
 local Class = require("Utils.Class")
 local Sound = require("Sound")
 local DisplayGroups = require("DisplayGroups")
@@ -64,9 +61,7 @@ function CardView:createDisplayObject(id, position)
     self.materialNumber = materialNumber
     self:_hideMaterialNumber()
 
-    if self.side == 1 then
-        displayObject:addEventListener("touch", self)
-    end
+    displayObject:addEventListener("touch", self)
 end
 
 function CardView:touch(event)
@@ -76,6 +71,13 @@ function CardView:touch(event)
 
     --can't select a summoned card for fusion
     if self.summoned then
+        print("touch")
+        Event.broadcast("SelectedOnField", self)
+        return
+    end
+
+    --can't select AI card as material
+    if self.side == 2 then
         return
     end
 
