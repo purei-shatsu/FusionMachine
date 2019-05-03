@@ -322,7 +322,11 @@ function Game:_playAIFusion()
 end
 
 function Game:_makeAIAttacks()
-    --TODO attack
+    --get AI cards on field
+    local cards = self.locator[2]:getCardsInLocation("field")
+
+    --order by atk (weaker first)
+    --TODO
 
     self:runPlayerTurn()
 end
@@ -342,29 +346,34 @@ function Game:_onSelectedOnField(card)
 end
 
 function Game:_attack(cardA, cardB)
-    local modelA = cardA:getModel()
-    local modelB = cardB:getModel()
-    local defeated = {}
+    coroutine.wrap(
+        function()
+            Animator.performAttack(cardA, cardB)
 
-    --determine which cards were defeated
-    local atkA = modelA:getAttack()
-    local atkB = modelB:getAttack()
-    if atkA <= atkB then
-        defeated[#defeated + 1] = cardA
-    end
-    if atkB <= atkA then
-        defeated[#defeated + 1] = cardB
-    end
+            --determine which cards were defeated
+            local modelA = cardA:getModel()
+            local modelB = cardB:getModel()
+            local defeated = {}
+            local atkA = modelA:getAttack()
+            local atkB = modelB:getAttack()
+            if atkA <= atkB then
+                defeated[#defeated + 1] = cardA
+            end
+            if atkB <= atkA then
+                defeated[#defeated + 1] = cardB
+            end
 
-    --destroy defeated cards
-    for _, card in ipairs(defeated) do
-        --remove from locator
-        local side = card:getSide()
-        self.locator[side]:removeCard(card)
+            --destroy defeated cards
+            for _, card in ipairs(defeated) do
+                --remove from locator
+                local side = card:getSide()
+                self.locator[side]:removeCard(card)
 
-        --destroy display object
-        card.displayObject:removeSelf()
-    end
+                --destroy display object
+                card.displayObject:removeSelf()
+            end
+        end
+    )()
 end
 
 return Game

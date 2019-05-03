@@ -38,3 +38,4 @@ TODO
         [-] Se a carta não atacar e tiver defesa <= ataque, muda ela para defesa
     [ ] Colocar músicas
         [ ] Troca automaticamente para uma outra aleatória
+    [ ] Fazer build mobile funcionar

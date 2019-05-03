@@ -2,6 +2,7 @@ local Sound = require("Sound")
 local DisplayGroups = require("DisplayGroups")
 local CardView = require("CardView")
 local Camera = require("Camera")
+local Transition = require("Transition")
 
 local Animator = {}
 
@@ -38,6 +39,33 @@ function Animator.performFusion(hand, materials, results, callback)
         end
     )
     resumeCoroutine()
+end
+
+function Animator.performAttack(attacker, attacked)
+    --animate attacker towards target
+    local x = attacker.displayObject.x
+    local y = attacker.displayObject.y
+    local duration = 400
+    Transition.to(
+        attacker.displayObject,
+        {
+            time = duration,
+            transition = easing.inQuad,
+            x = attacked.displayObject.x,
+            y = attacked.displayObject.y
+        },
+        true
+    )
+    Transition.to(
+        attacker.displayObject,
+        {
+            onStart = Sound.playWrapper("discard"),
+            time = duration,
+            transition = easing.outQuad,
+            x = x,
+            y = y
+        }
+    )
 end
 
 function Animator._resetDelay()
