@@ -38,7 +38,7 @@ local Game =
                 end
             }
         },
-        aiDifficulty = 1
+        aiDifficulty = 2
     },
     function(self, database)
         self.locator = {}
@@ -146,11 +146,6 @@ function Game:_fuseSelectedMaterials(position)
         results,
         function(finalCard)
             self:_finishFusion(finalCard, position)
-
-            --print cards in location
-            for i, card in pairs(self.locator[side]:getCardsInLocation("field")) do
-                print(i, card:getModel():getName())
-            end
         end
     )
 end
@@ -160,7 +155,7 @@ function Game:_finishFusion(finalCard, position)
     self.locator[side]:insertCard(finalCard, "field", position)
     finalCard:summon(position)
 
-    Camera.moveToField()
+    Camera.moveToField(true)
 
     if not IS_PLAYER_TURN then
         self:_makeAIAttacks()
@@ -262,6 +257,11 @@ function Game:_isFusionBetter(resultA, materialsA, replacesA, resultB, materials
 end
 
 function Game:_playAIFusion()
+    --choose AI dificulty based on card difference
+    local AICards = self.locator[2]:getLocationCount("field")
+    local playerCards = self.locator[1]:getLocationCount("field")
+    self.aiDifficulty = math.max(2, playerCards - AICards + 1)
+
     --choose best fusion
     local hand = self.locator[2]:getCardsInLocation("hand")
     local field = self.locator[2]:getCardsInLocation("field")
@@ -272,7 +272,6 @@ function Game:_playAIFusion()
             break
         end
     end
-    print("emptyPosition", emptyPosition)
     local bestResult, bestMaterials, bestPosition, bestReplace
     for materials in permutations(hand, 1, self.aiDifficulty) do
         --check result if playing on an empty position
@@ -288,21 +287,32 @@ function Game:_playAIFusion()
         end
 
         --check results if playing over cards on the field
-        for position, card in pairs(field) do
-            --add card to materials
-            local materialsWithField = {card}
-            for i, m in ipairs(materials) do
-                materialsWithField[i + 1] = m
-            end
+        if #materials + 1 <= self.aiDifficulty or not emptyPosition then --can't go over fusion limit, unless there is not empty position
+            for position, card in pairs(field) do
+                --add card to materials
+                local materialsWithField = {card}
+                for i, m in ipairs(materials) do
+                    materialsWithField[i + 1] = m
+                end
 
-            --check result
-            local resultsWithField = FusionProcessor.performFusion(materialsWithField)
-            local resultWithField = resultsWithField[#resultsWithField]
-            if self:_isFusionBetter(resultWithField, materialsWithField, true, bestResult, bestMaterials, bestReplace) then
-                bestResult = resultWithField
-                bestMaterials = materialsWithField
-                bestPosition = position
-                bestReplace = true
+                --check result
+                local resultsWithField = FusionProcessor.performFusion(materialsWithField)
+                local resultWithField = resultsWithField[#resultsWithField]
+                if
+                    self:_isFusionBetter(
+                        resultWithField,
+                        materialsWithField,
+                        true,
+                        bestResult,
+                        bestMaterials,
+                        bestReplace
+                    )
+                 then
+                    bestResult = resultWithField
+                    bestMaterials = materialsWithField
+                    bestPosition = position
+                    bestReplace = true
+                end
             end
         end
     end
@@ -321,13 +331,52 @@ function Game:_playAIFusion()
     self:_fuseSelectedMaterials(bestPosition)
 end
 
+local function weakAtkOrder(a, b)
+    return a:getModel():getAttack() < b:getModel():getAttack()
+end
+
+local function strongAtkOrder(a, b)
+    return a:getModel():getAttack() > b:getModel():getAttack()
+end
+
 function Game:_makeAIAttacks()
+    local hasMoreCards = self.locator[2]:getLocationCount("field") > self.locator[1]:getLocationCount("field")
+
     --get AI cards on field
-    local cards = self.locator[2]:getCardsInLocation("field")
+    local attackersDict = self.locator[2]:getCardsInLocation("field")
+    local attackers = {}
+    for _, attacker in pairs(attackersDict) do
+        attackers[#attackers + 1] = attacker
+    end
 
     --order by atk (weaker first)
-    --TODO
+    table.sort(attackers, weakAtkOrder)
 
+    --for each attacker, attack the strongest card that is weaker than it
+    for _, attacker in ipairs(attackers) do
+        local attackerAtk = attacker:getModel():getAttack()
+
+        --get targets
+        local targetsDict = self.locator[1]:getCardsInLocation("field")
+        local targets = {}
+        for _, target in pairs(targetsDict) do
+            targets[#targets + 1] = target
+        end
+
+        --order by atk (stronger first)
+        table.sort(targets, strongAtkOrder)
+
+        --attack first with atk lower (or same atk if has more cards)
+        for _, target in ipairs(targets) do
+            local targetAtk = target:getModel():getAttack()
+            if attackerAtk > targetAtk or (hasMoreCards and attackerAtk == targetAtk) then
+                self:_attack(attacker, target)
+                break
+            end
+        end
+    end
+
+    --finish turn
     self:runPlayerTurn()
 end
 
@@ -339,41 +388,41 @@ function Game:_onSelectedOnField(card)
     elseif self.attacker then
         --card belongs to AI, finish attack if already selected an attacker
         Sound.play("confirm")
-        local attacked = card
-        self:_attack(self.attacker, attacked)
-        self.attacker = nil
+        local target = card
+        coroutine.wrap(
+            function()
+                self:_attack(self.attacker, target)
+                self.attacker = nil
+            end
+        )()
     end
 end
 
 function Game:_attack(cardA, cardB)
-    coroutine.wrap(
-        function()
-            Animator.performAttack(cardA, cardB)
+    Animator.performAttack(cardA, cardB)
 
-            --determine which cards were defeated
-            local modelA = cardA:getModel()
-            local modelB = cardB:getModel()
-            local defeated = {}
-            local atkA = modelA:getAttack()
-            local atkB = modelB:getAttack()
-            if atkA <= atkB then
-                defeated[#defeated + 1] = cardA
-            end
-            if atkB <= atkA then
-                defeated[#defeated + 1] = cardB
-            end
+    --determine which cards were defeated
+    local modelA = cardA:getModel()
+    local modelB = cardB:getModel()
+    local defeated = {}
+    local atkA = modelA:getAttack()
+    local atkB = modelB:getAttack()
+    if atkA <= atkB then
+        defeated[#defeated + 1] = cardA
+    end
+    if atkB <= atkA then
+        defeated[#defeated + 1] = cardB
+    end
 
-            --destroy defeated cards
-            for _, card in ipairs(defeated) do
-                --remove from locator
-                local side = card:getSide()
-                self.locator[side]:removeCard(card)
+    --destroy defeated cards
+    for _, card in ipairs(defeated) do
+        --remove from locator
+        local side = card:getSide()
+        self.locator[side]:removeCard(card)
 
-                --destroy display object
-                card.displayObject:removeSelf()
-            end
-        end
-    )()
+        --destroy display object
+        card.displayObject:removeSelf()
+    end
 end
 
 return Game

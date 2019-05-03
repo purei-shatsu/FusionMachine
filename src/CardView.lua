@@ -71,7 +71,6 @@ function CardView:touch(event)
 
     --can't select a summoned card for fusion
     if self.summoned then
-        print("touch")
         Event.broadcast("SelectedOnField", self)
         return
     end

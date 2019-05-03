@@ -41,7 +41,7 @@ function Animator.performFusion(hand, materials, results, callback)
     resumeCoroutine()
 end
 
-function Animator.performAttack(attacker, attacked)
+function Animator.performAttack(attacker, target)
     --animate attacker towards target
     local x = attacker.displayObject.x
     local y = attacker.displayObject.y
@@ -51,8 +51,8 @@ function Animator.performAttack(attacker, attacked)
         {
             time = duration,
             transition = easing.inQuad,
-            x = attacked.displayObject.x,
-            y = attacked.displayObject.y
+            x = target.displayObject.x,
+            y = target.displayObject.y
         },
         true
     )
@@ -64,7 +64,8 @@ function Animator.performAttack(attacker, attacked)
             transition = easing.outQuad,
             x = x,
             y = y
-        }
+        },
+        true
     )
 end
 
