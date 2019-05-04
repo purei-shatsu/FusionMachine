@@ -38,5 +38,5 @@ TODO
         [-] Se a carta não atacar e tiver defesa <= ataque, muda ela para defesa
     [x] Fazer build mobile funcionar
     [x] Scale no content size
-    [ ] Colocar músicas
-        [ ] Troca automaticamente para uma outra aleatória
+    [x] Colocar músicas
+    [ ] Mudar ícone
