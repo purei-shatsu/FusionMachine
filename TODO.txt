@@ -39,4 +39,4 @@ TODO
     [x] Fazer build mobile funcionar
     [x] Scale no content size
     [x] Colocar músicas
-    [ ] Mudar ícone
+    [x] Mudar ícone
