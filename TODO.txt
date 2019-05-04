@@ -34,8 +34,9 @@ TODO
         [x] AI compra cartas até ter 5
         [-] Cartas da AI ficam escondidas
         [x] AI faz uma fusão (melhor possível dentro do nível de dificuldade)
-        [ ] Para cada carta sua (começando pela mais fraca), ataca a carta mais forte possível do oponente
+        [x] Para cada carta sua (começando pela mais fraca), ataca a carta mais forte possível do oponente
         [-] Se a carta não atacar e tiver defesa <= ataque, muda ela para defesa
+    [x] Fazer build mobile funcionar
+    [x] Scale no content size
     [ ] Colocar músicas
         [ ] Troca automaticamente para uma outra aleatória
-    [ ] Fazer build mobile funcionar
