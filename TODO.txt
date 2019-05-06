@@ -1,0 +1,42 @@
+Game Rules
+    Very modified:
+        Can only play each zone once per turn (prevents boring semi-safe fusions)
+        Can play a max of 8 stars from hand per turn
+    Slightly modified
+        Can only play one card/fusion per turn (same as original)
+        [MAYBE] Total levels of cards in the deck can't go over a certain value
+            Provavelmente é desnecessário, já é melhor usar cartas com atk 0 pra fazer fusões rápidas
+    Only monsters with atk<=3000 and def<=3000 can go into the main deck (the rest can only be obtained through fusion)
+    Rest are Forbidden Memories rules
+    [TODO] Spells/equips/traps
+
+Traps
+    Traps de battle phase ou de summon, mas com efeitos mais relevantes (ativação automática):
+    Mirror Force
+    Magic Cylinder
+    Torrential Tribute
+    Trap Hole(s)
+
+TODO
+    Fluxo
+        [x] Jogador compra cartas até ter 5
+        [x] Jogador clica em cartas da mão para fundir
+        [x] Jogador clica em um espaço (ou carta) no campo para jogar
+        [x] Fusão ocorre, e resultado é jogado no lugar clicado
+        [x] Se clicou em uma carta, essa carta é colocada como primeiro material da fusão
+        [x] Jogador clica em uma carta sua
+        [x] Jogador clica em um espaço (ou carta) do oponente
+        [-] Se clicou em um espaço, causa dano direto
+        [x] Se clicou em uma carta, as duas cartas batalham
+        [-] Se clicou na própria carta, muda a battle position
+        [-] Jogador clica duas vezes em uma carta sua para mudar a posição
+        [x] Jogador clica no botão de passar turno
+        [x] AI compra cartas até ter 5
+        [-] Cartas da AI ficam escondidas
+        [x] AI faz uma fusão (melhor possível dentro do nível de dificuldade)
+        [x] Para cada carta sua (começando pela mais fraca), ataca a carta mais forte possível do oponente
+        [-] Se a carta não atacar e tiver defesa <= ataque, muda ela para defesa
+    [x] Fazer build mobile funcionar
+    [x] Scale no content size
+    [x] Colocar músicas
+    [x] Mudar ícone
