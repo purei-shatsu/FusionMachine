@@ -116,6 +116,11 @@ function Animator._hideNonMaterials(hand, materials)
 end
 
 function Animator._moveMaterialsToStartPosition(materials)
+    --hide texts
+    for _, material in ipairs(materials) do
+        material:hideText()
+    end
+
     local duration = 400
     local side = materials[1]:getSide()
     local centerY = display.contentCenterY + Camera.getY()
@@ -331,6 +336,7 @@ function Animator._fuseMaterials(materials, results)
             --finish fusion
             Animator._addDelay(duration * 0.3)
             local resultView = CardView:new(resultModel, side, 1)
+            resultView:hideText()
             resultView.displayObject.x = centerX
             resultView.displayObject.y = centerY
             resultView.displayObject.xScale = 1.7

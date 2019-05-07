@@ -68,4 +68,12 @@ local CardText =
     end
 )
 
+function CardText:hide()
+    self.displayObject.isVisible = false
+end
+
+function CardText:show()
+    self.displayObject.isVisible = true
+end
+
 return CardText

@@ -167,10 +167,19 @@ function CardView:summon(position)
         true
     )
     self.displayObject:toBack()
+    self:showText()
 end
 
 function CardView:getSide()
     return self.side
+end
+
+function CardView:hideText()
+    self.text:hide()
+end
+
+function CardView:showText()
+    self.text:show()
 end
 
 function CardView:_hideMaterialNumber()
