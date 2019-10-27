@@ -244,11 +244,11 @@ function Game:_isFusionBetter(resultA, materialsA, replacesA, resultB, materials
         return false
     end
 
-    --less materials wins
-    if amountA < amountB then
+    --more materials wins
+    if amountA > amountB then
         return true
     end
-    if amountA > amountB then
+    if amountA < amountB then
         return false
     end
 
