@@ -63,8 +63,6 @@ local CardText =
             }
         )
         text:setFillColor(0, 0, 0)
-
-        print(model:getName(), model:getRace())
     end
 )
 
