@@ -257,10 +257,10 @@ function Game:_isFusionBetter(resultA, materialsA, replacesA, resultB, materials
 end
 
 function Game:_playAIFusion()
-    --choose AI dificulty based on card difference
+    --choose AI dificulty based on card difference (but never go easier)
     local AICards = self.locator[2]:getLocationCount("field")
     local playerCards = self.locator[1]:getLocationCount("field")
-    self.aiDifficulty = math.max(2, playerCards - AICards + 1)
+    self.aiDifficulty = math.max(2, playerCards - AICards + 1, self.aiDifficulty)
 
     --choose best fusion
     local hand = self.locator[2]:getCardsInLocation("hand")

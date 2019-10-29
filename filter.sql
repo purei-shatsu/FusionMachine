@@ -13,4 +13,4 @@ delete from datas where atk<0 or def<0;
 --set links monsters def to 0
 update datas set def=0 where type==67108897;
 
-
+--TODO remove tokens
