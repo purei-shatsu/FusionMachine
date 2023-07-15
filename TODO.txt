@@ -1,3 +1,9 @@
+Principal problema:
+    Não é fácil memorizar as fusões como é no forbidden memories, porque tem muitas possibilidades
+    Pra funcionar bem, provavelmente teria que ser algo mais monotipo (bird + fire = crimson bird)
+    Com fusões "hard-coded"
+
+
 TODO
     [x] Colocar apenas card pool do FM
     [-] Mudar regra pra só considerar o ATK, e pegar o menor
