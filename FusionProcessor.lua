@@ -21,6 +21,8 @@ function FusionProcessor.performFusion(materials)
 end
 
 function FusionProcessor._getFusionResult(a, b)
+    local Game = require("Game")
+
     --[[
         Fusion Conditions:
             Type from one and attribute from the other;
@@ -32,10 +34,12 @@ function FusionProcessor._getFusionResult(a, b)
         string.format(
         [[
 		select * from datas as d inner join texts as t on d.id==t.id where
+        d.id in (%s) and
 		((race==%d and attribute==%d) or (race==%d and attribute==%d)) and
 		atk<=%d and (atk>%d or (atk==%d and def>%d))
 		order by atk desc,def desc,id limit 1
 		]],
+        Game.forbiddenMemoriesIds,
         a:getRace(),
         b:getAttribute(),
         b:getRace(),
