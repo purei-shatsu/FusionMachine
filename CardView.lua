@@ -3,7 +3,7 @@ local Sound = require("Sound")
 local DisplayGroups = require("DisplayGroups")
 local Transition = require("Transition")
 local CardText = require("CardText")
-local Event = require("EventSystem.Event")
+local Event = require("OldEventSystem.Event")
 
 local scale = 1.5
 local CardView =

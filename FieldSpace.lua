@@ -1,20 +1,13 @@
 local Class = require("Utils.Class")
 local DisplayGroups = require("DisplayGroups")
 local CardView = require("CardView")
-local Event = require("EventSystem.Event")
+local Event = require("OldEventSystem.Event")
 
 local FieldSpace =
     Class.new(
     {},
     function(self, side, position)
-        self.rect =
-            display.newRect(
-            DisplayGroups.ui,
-            (position - 1) * CardView.width,
-            (1.5 - side) * CardView.height,
-            CardView.width,
-            CardView.height
-        )
+        self.rect = display.newRect(DisplayGroups.ui, (position - 1) * CardView.width, (1.5 - side) * CardView.height, CardView.width, CardView.height)
         self.rect:addEventListener("touch", self)
         self.rect.isVisible = false
         self.rect.isHitTestable = true

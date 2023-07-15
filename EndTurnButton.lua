@@ -1,5 +1,5 @@
 local Class = require("Utils.Class")
-local Event = require("EventSystem.Event")
+local Event = require("OldEventSystem.Event")
 
 local EndTurnButton =
     Class.new(

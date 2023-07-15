@@ -9,7 +9,7 @@ local Database = require("Database")
 local DisplayGroups = require("DisplayGroups")
 local Camera = require("Camera")
 local FieldSpace = require("FieldSpace")
-local Eventer = require("EventSystem.Eventer")
+local Eventer = require("OldEventSystem.Eventer")
 local EndTurnButton = require("EndTurnButton")
 
 local Game =
@@ -98,10 +98,7 @@ function Game:_drawCardsUntilFive(side)
     --select five non-special cards for starting hand
     local amount = 5 - self.locator[side]:getLocationCount("hand")
     for cardData in Database:nrows(
-        string.format(
-            "select * from datas as d inner join texts as t on d.id==t.id and level<=4 order by random() limit %d",
-            amount
-        )
+        string.format("select * from datas as d inner join texts as t on d.id==t.id and level<=4 order by random() limit %d", amount)
     ) do
         local position = self.locator[side]:getLocationCount("hand") + 1
         local cardModel = CardModel:new(cardData)
@@ -298,16 +295,7 @@ function Game:_playAIFusion()
                 --check result
                 local resultsWithField = FusionProcessor.performFusion(materialsWithField)
                 local resultWithField = resultsWithField[#resultsWithField]
-                if
-                    self:_isFusionBetter(
-                        resultWithField,
-                        materialsWithField,
-                        true,
-                        bestResult,
-                        bestMaterials,
-                        bestReplace
-                    )
-                 then
+                if self:_isFusionBetter(resultWithField, materialsWithField, true, bestResult, bestMaterials, bestReplace) then
                     bestResult = resultWithField
                     bestMaterials = materialsWithField
                     bestPosition = position
