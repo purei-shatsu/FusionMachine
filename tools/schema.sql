@@ -30,6 +30,16 @@ CREATE TABLE IF NOT EXISTS cards (
     updated_at          TEXT NOT NULL
 );
 
+-- Release order of every set, so "newer card wins" is answerable. Nothing in the
+-- DCGO assets carries a date, and rowid is useless (the importer walks folders
+-- alphabetically, so BT10 lands before BT2). Populated from SET_RELEASES in
+-- tools/dcgo_import.py.
+CREATE TABLE IF NOT EXISTS sets (
+    set_code      TEXT PRIMARY KEY,
+    release_order INTEGER NOT NULL,
+    release_date  TEXT                -- NULL for the undated promo lines (P, LM)
+);
+
 CREATE TABLE IF NOT EXISTS card_colors (
     card_id    TEXT NOT NULL,
     ord        INTEGER NOT NULL,

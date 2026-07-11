@@ -41,6 +41,86 @@ VARIANT_RE = re.compile(r"_P(\d+)$")
 # YAML: "01000000" matches YAML 1.1's octal int rule and would silently become 262144.
 CARD_COLORS_RE = re.compile(r"^\s*cardColors:\s*(\S*)\s*$", re.MULTILINE)
 
+# Release date of every set, from the official product list at
+# https://en.digimoncard.com/products/. The assets carry no date of their own, so
+# this is the only way to answer "which of these two cards is newer".
+#
+# Set codes are written here as Bandai prints them (BT-01) and normalised to the
+# form the assets use (BT1) by normalize_set_code. Sets DCGO has not shipped yet
+# are listed too, so a future sync does not immediately trip the assertion below.
+#
+# P (promos) and LM span the game's whole life and have no single date. They sort
+# oldest, so a card from a real set always wins a recency tie against them.
+SET_RELEASES = {
+    "P": None,
+    "LM": None,
+    "ST-01": "2020-04-24",
+    "ST-02": "2020-04-24",
+    "ST-03": "2020-04-24",
+    "BT-01": "2020-05-15",
+    "BT-02": "2020-07-22",
+    "BT-03": "2020-10-30",
+    "ST-04": "2020-11-27",
+    "ST-05": "2020-11-27",
+    "ST-06": "2020-11-27",
+    "BT-04": "2020-12-18",
+    "BT-05": "2021-02-26",
+    "ST-07": "2021-04-23",
+    "ST-08": "2021-04-23",
+    "BT-06": "2021-05-28",
+    "EX-01": "2021-07-30",
+    "BT-07": "2021-08-27",
+    "ST-09": "2021-10-29",
+    "ST-10": "2021-10-29",
+    "ST-11": "2021-11-26",
+    "BT-08": "2021-11-26",
+    "EX-02": "2021-12-24",
+    "BT-09": "2022-02-25",
+    "ST-12": "2022-04-22",
+    "ST-13": "2022-04-22",
+    "BT-10": "2022-05-27",
+    "EX-03": "2022-07-29",
+    "BT-11": "2022-09-30",
+    "BT-12": "2022-11-25",
+    "ST-14": "2022-12-09",
+    "EX-04": "2022-12-23",
+    "RB-01": "2023-01-27",
+    "BT-13": "2023-02-24",
+    "ST-15": "2023-05-26",
+    "ST-16": "2023-05-26",
+    "BT-14": "2023-06-30",
+    "EX-05": "2023-08-25",
+    "BT-15": "2023-09-29",
+    "ST-17": "2023-11-24",
+    "BT-16": "2023-12-22",
+    "EX-06": "2024-02-23",
+    "BT-17": "2024-03-29",
+    "ST-18": "2024-04-26",
+    "ST-19": "2024-04-26",
+    "EX-07": "2024-05-31",
+    "BT-18": "2024-06-28",
+    "BT-19": "2024-09-27",
+    "EX-08": "2024-11-29",
+    "BT-20": "2025-01-31",
+    "ST-20": "2025-04-19",
+    "ST-21": "2025-04-19",
+    "BT-21": "2025-04-19",
+    "EX-09": "2025-06-26",
+    "BT-22": "2025-07-19",
+    "EX-10": "2025-09-20",
+    "BT-23": "2025-10-18",
+    "ST-22": "2025-12-06",
+    "BT-24": "2026-01-17",
+    "EX-11": "2026-02-14",
+    "AD-01": "2026-03-28",
+    "BT-25": "2026-05-16",
+    "ST-23": "2026-05-16",
+    "ST-24": "2026-05-16",
+    "EX-12": "2026-07-04",
+    "BT-26": "2026-08-29",
+    "EX-13": "2026-10-03",
+}
+
 
 def parse_asset(path):
     """Parse one Unity .asset into (fields, colors). Returns None for non-card assets."""
@@ -61,6 +141,36 @@ def parse_asset(path):
     colors = [v[0] for v in struct.iter_unpack("<i", raw)]
 
     return fields, colors
+
+
+def normalize_set_code(printed):
+    """'BT-01' -> 'BT1', matching the set_code the assets' card ids yield. 'P' -> 'P'."""
+    line, _, number = printed.partition("-")
+    return line + str(int(number)) if number else line
+
+
+def write_sets(db):
+    """Rewrite the sets table, ranking every set oldest-first by release date.
+
+    Undated lines (P, LM) get order 0, so they lose every recency tie.
+    """
+    dated = sorted((d, normalize_set_code(s)) for s, d in SET_RELEASES.items() if d)
+    rows = [(normalize_set_code(s), 0, None) for s, d in SET_RELEASES.items() if not d]
+    rows += [(code, order, date) for order, (date, code) in enumerate(dated, start=1)]
+
+    db.execute("DELETE FROM sets")
+    db.executemany("INSERT INTO sets (set_code, release_order, release_date) VALUES (?, ?, ?)", rows)
+
+    orphans = [
+        code
+        for (code,) in db.execute(
+            "SELECT DISTINCT set_code FROM cards WHERE set_code NOT IN (SELECT set_code FROM sets)"
+        )
+    ]
+    if orphans:
+        raise SystemExit(
+            f"no release date for set(s) {', '.join(sorted(orphans))} -- add them to SET_RELEASES"
+        )
 
 
 def blank_to_none(value):
@@ -231,6 +341,7 @@ def main():
     if missing and args.prune:
         db.executemany("DELETE FROM cards WHERE card_id = ?", [(c,) for c in missing])
 
+    write_sets(db)
     db.commit()
 
     with_art = db.execute("SELECT count(*) FROM cards WHERE has_art = 1").fetchone()[0]

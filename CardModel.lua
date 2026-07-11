@@ -1,3 +1,17 @@
+--[[
+    Base class for a card of either game. Holds the raw database row; every accessor
+    is defined by the subclass, because the two databases have nothing in common at
+    the column level.
+
+    Subclasses (YugiohCardModel, DigimonCardModel) must implement:
+        getId()             identity
+        getName()
+        getPower()          the single stat that decides battles (atk / DP)
+        getImagePath()      the card art
+        getDisplayText()    the two lines CardText paints over the art
+
+    Anything beyond that is the mode's own business, and only its own Rules reads it.
+--]]
 local Class = require("Utils.Class")
 
 local CardModel =
@@ -5,32 +19,7 @@ local CardModel =
     {},
     function(self, data)
         self.data = data
-        self.class = "CardModel"
     end
 )
-
-function CardModel:getId()
-    return self.data.id
-end
-
-function CardModel:getName()
-    return self.data.name
-end
-
-function CardModel:getAttack()
-    return self.data.atk
-end
-
-function CardModel:getDefense()
-    return self.data.def
-end
-
-function CardModel:getRace()
-    return self.data.race
-end
-
-function CardModel:getAttribute()
-    return self.data.attribute
-end
 
 return CardModel

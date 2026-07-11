@@ -1,16 +1,16 @@
 local sqlite3 = require("sqlite3")
 local MemoryCleaner = require("MemoryCleaner")
 
-local path = system.pathForFile("cards.cdb")
-local Database = sqlite3.open(path)
-MemoryCleaner.register(
-    function()
-        Database:close()
-    end
-)
+local Database = {}
 
--- for card in Database:nrows('select * from datas as d inner join texts as t on d.id==t.id order by atk,def') do
--- 	print(card.name, card.level, card.atk, card.def)
--- end
+function Database.open(filename)
+    local database = sqlite3.open(system.pathForFile(filename))
+    MemoryCleaner.register(
+        function()
+            database:close()
+        end
+    )
+    return database
+end
 
 return Database

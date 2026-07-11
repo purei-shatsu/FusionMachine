@@ -15,7 +15,7 @@ local CardView =
     function(self, model, side, position)
         self.model = model
         self.side = side
-        self:createDisplayObject(model:getId(), position)
+        self:createDisplayObject(position)
     end
 )
 
@@ -37,12 +37,12 @@ function CardView:moveToHand(position, wait)
     )
 end
 
-function CardView:createDisplayObject(id, position)
+function CardView:createDisplayObject(position)
     local displayObject = display.newGroup()
     DisplayGroups.cards:insert(displayObject)
     self.displayObject = displayObject
 
-    local image = display.newImageRect(displayObject, "pics/" .. id .. ".jpg", self.width, self.height)
+    local image = display.newImageRect(displayObject, self.model:getImagePath(), self.width, self.height)
     self.image = image
 
     local finalX = self:_getXAtPosition(position)
