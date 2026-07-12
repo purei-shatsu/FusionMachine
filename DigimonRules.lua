@@ -11,7 +11,7 @@ local drawLevel = 3
 
 --the card pool the game plays with, e.g. {"BT24", "EX11"}. Empty means every set.
 --restricts both the drawn hands and the fusion results
-local drawSets = {"EX11"}
+local drawSets = {"BT23"}
 
 local function toSqlList(colors)
     return table.concat(colors, ",")
