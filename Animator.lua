@@ -3,6 +3,7 @@ local DisplayGroups = require("DisplayGroups")
 local CardView = require("CardView")
 local Camera = require("Camera")
 local Transition = require("Transition")
+local TimeScale = require("TimeScale")
 
 local Animator = {}
 
@@ -432,7 +433,9 @@ function Animator._fuseMaterials(materials, results)
 end
 
 function Animator._executeEveryFrame(param)
-    local duration = param.time
+    --this loop runs off the real clock instead of the transition library, so it is the one place
+    --that has to scale its own duration -- param.delay is scaled by timer.performWithDelay below
+    local duration = TimeScale.apply(param.time)
     local easing = param.transition or easing.linear
     timer.performWithDelay(
         param.delay,

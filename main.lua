@@ -4,6 +4,9 @@ local generateImages = false
 require("Utils.SmartRequire")
 require("Utils.Utils")
 
+--patches transition.to and timer.performWithDelay, so it must be installed before anything animates
+require("TimeScale")
+
 --must come before anything else, because the rules module opens its database as a
 --side effect of being required
 require("GameMode").set(gameMode)
