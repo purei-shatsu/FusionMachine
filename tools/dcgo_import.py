@@ -66,6 +66,10 @@ yaml.SafeLoader.add_constructor(
 # They are found by looking for a card whose first type is an attribute name -- a trait can
 # never be "Vaccine" | "Data" | "Virus" | "Free".
 #
+# BT17-077 and EX12-076 leak the same way, but further down the type list: the attribute
+# "Free" and the form "Hybrid" are appended after the real traits. They are found by
+# looking for any type that is also a known attribute or form name.
+#
 # Stats: these three EX-11 cards ship with DP and PlayCost zeroed out (the rest of EX-11
 # is fine). DP 0 is a legal value -- BT18-086 Lucemon: Larva really is a 0 DP card -- so
 # nothing can detect this automatically; the values come from the official card list.
@@ -82,6 +86,8 @@ CARD_FIXES = {
     "P-076": {"Type_ENG": ["Composite"], "Attribute_ENG": ["Virus"]},
     "P-077": {"Type_ENG": ["Wizard"], "Attribute_ENG": ["Data"]},
     "EX11-011": {"Type_ENG": ["Dinosaur", "LIBERATOR"], "Attribute_ENG": ["Vaccine"]},
+    "BT17-077": {"Type_ENG": ["Ancient Holy Warrior"]},
+    "EX12-076": {"Type_ENG": ["Shaman", "Shambala", "SW", "TB", "TS"]},
     "EX11-009": {"DP": 6000, "PlayCost": 5},
     "EX11-010": {"DP": 7000, "PlayCost": 8},
     "EX11-047": {"DP": 1000, "PlayCost": 3},

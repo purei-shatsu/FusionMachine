@@ -11,10 +11,19 @@ local drawLevel = 3
 
 --the card pool the game plays with, e.g. {"BT24", "EX11"}. Empty means every set.
 --restricts both the drawn hands and the fusion results
-local drawSets = {"EX12"}
+local drawSets = {"EX11"}
 
 local function toSqlList(colors)
     return table.concat(colors, ",")
+end
+
+--no trait group carries an apostrophe, so quoting the names is enough
+local function toSqlTextList(traits)
+    local quoted = {}
+    for _, trait in ipairs(traits) do
+        table.insert(quoted, string.format("'%s'", trait))
+    end
+    return table.concat(quoted, ",")
 end
 
 local function drawSetsClause()
@@ -28,12 +37,49 @@ local function drawSetsClause()
     return string.format(" and c.set_code in (%s)", table.concat(quoted, ","))
 end
 
---colors live in a child table, so pull them back with the row as "0,5". The trait is the
---first of the card's types, and the only one that counts
+--[[
+    The trait groups of every Digimon, resolved once through DigimonTraits into a temp table.
+    They cannot be stored in the database: a card's traits are the first two distinct groups
+    of its card_types, and both the grouping and the cap are rules, which live here rather
+    than in the import. SQL cannot derive them, but the fusion query has to filter on them.
+--]]
+local function buildTraitIndex()
+    database:exec("create temp table card_traits (card_id text, trait text)")
+    database:exec("create index card_traits_by_card on card_traits(card_id)")
+
+    local cardIds = {}
+    local rawTraits = {}
+    local sqlQuery =
+        [[
+        select t.card_id, t.type_en from card_types as t inner join cards as c on c.card_id==t.card_id
+        where c.card_kind==0
+        order by t.card_id, t.ord
+        ]]
+    for data in database:nrows(sqlQuery) do
+        if not rawTraits[data.card_id] then
+            rawTraits[data.card_id] = {}
+            table.insert(cardIds, data.card_id)
+        end
+        table.insert(rawTraits[data.card_id], data.type_en)
+    end
+
+    database:exec("begin")
+    for _, cardId in ipairs(cardIds) do
+        for _, trait in ipairs(DigimonTraits.getGroups(rawTraits[cardId])) do
+            database:exec(string.format("insert into card_traits values ('%s','%s')", cardId, trait))
+        end
+    end
+    database:exec("commit")
+end
+
+buildTraitIndex()
+
+--colors and traits both live in a child table, so pull them back with the row as "0,5" and
+--"Machine,Insect", and the whole card comes back in a single row
 local selectCard =
     [[
     select c.*, (select group_concat(color) from card_colors x where x.card_id==c.card_id) as colors,
-                (select t.type_en from card_types t where t.card_id==c.card_id and t.ord==0) as trait
+                (select group_concat(trait) from card_traits x where x.card_id==c.card_id) as traits
     from cards as c inner join sets as s on s.set_code==c.set_code
     where c.card_kind==0
     ]] ..
@@ -66,37 +112,39 @@ end
     Fusion Conditions:
         Level is one above the highest material;
         Every colour of the result comes from one of the materials;
-        The result shares at least one colour with each material;
-        The result has the trait of one of the materials.
-    Order by: colour count, newest set, id
+        The result shares a trait with one material and a colour with the other.
+    Order by: newest set, id
 
-    All four conditions are symmetric in a and b, so the fusion is commutative, and
-    the ordering is total, so it is deterministic. Levels top out at 7, so a level 7
-    material asks for a level 8 result, finds none, and always fails.
+    Every condition is symmetric in a and b, so the fusion is commutative, and the ordering is
+    total, so it is deterministic. Levels top out at 7, so a level 7 material asks for a level
+    8 result, finds none, and always fails.
 --]]
 function DigimonRules.getFusionResult(a, b)
     local colorsA = toSqlList(a:getColors())
     local colorsB = toSqlList(b:getColors())
+    local traitsA = toSqlTextList(a:getTraits())
+    local traitsB = toSqlTextList(b:getTraits())
     local sqlQuery =
         string.format(
         [[
         %s and
         c.level==%d and
         not exists (select 1 from card_colors x where x.card_id==c.card_id and x.color not in (%s)) and
-        exists (select 1 from card_colors x where x.card_id==c.card_id and x.color in (%s)) and
-        exists (select 1 from card_colors x where x.card_id==c.card_id and x.color in (%s)) and
-        trait in (%s)
-        order by (select count(*) from card_colors x where x.card_id==c.card_id) desc,
-                 s.release_order desc,
+        ((exists (select 1 from card_traits x where x.card_id==c.card_id and x.trait in (%s)) and
+          exists (select 1 from card_colors x where x.card_id==c.card_id and x.color in (%s))) or
+         (exists (select 1 from card_traits x where x.card_id==c.card_id and x.trait in (%s)) and
+          exists (select 1 from card_colors x where x.card_id==c.card_id and x.color in (%s))))
+        order by s.release_order desc,
                  c.card_id
         limit 1
         ]],
         selectCard,
         math.max(a:getLevel(), b:getLevel()) + 1,
         toSqlList(union(a:getColors(), b:getColors())),
-        colorsA,
+        traitsA,
         colorsB,
-        DigimonTraits.getSqlList(a:getTrait(), b:getTrait())
+        traitsB,
+        colorsA
     )
     for data in database:nrows(sqlQuery) do
         return DigimonCardModel:new(data)
