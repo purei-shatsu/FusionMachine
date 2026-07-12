@@ -37,12 +37,26 @@ function CardView:moveToHand(position, wait)
     )
 end
 
+--newImageRect returns nil when the art file is missing. The card still plays, standing in as a
+--white rectangle, so the gap is named in the console instead of taking the game down
+function CardView:_createImage(displayObject)
+    local image = display.newImageRect(displayObject, self.model:getImagePath(), self.width, self.height)
+    if image then
+        return image
+    end
+
+    print(string.format("missing art: %s (%s)", self.model:getName(), self.model:getImagePath()))
+    image = display.newRect(displayObject, 0, 0, self.width, self.height)
+    image:setFillColor(1)
+    return image
+end
+
 function CardView:createDisplayObject(position)
     local displayObject = display.newGroup()
     DisplayGroups.cards:insert(displayObject)
     self.displayObject = displayObject
 
-    local image = display.newImageRect(displayObject, self.model:getImagePath(), self.width, self.height)
+    local image = self:_createImage(displayObject)
     self.image = image
 
     local finalX = self:_getXAtPosition(position)

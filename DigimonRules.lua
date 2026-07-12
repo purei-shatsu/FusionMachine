@@ -6,12 +6,12 @@ local DigimonRules = {}
 
 local database = Database.open("digimon.cdb")
 
---only Digimon cards. Cards with no art are played anyway, so a missing image fails loudly
+--only Digimon cards. Cards with no art are played anyway, standing in as a white rectangle
 local drawLevel = 3
 
 --the card pool the game plays with, e.g. {"BT24", "EX11"}. Empty means every set.
 --restricts both the drawn hands and the fusion results
-local drawSets = {"BT23"}
+local drawSets = {"EX10"}
 
 local function toSqlList(colors)
     return table.concat(colors, ",")
