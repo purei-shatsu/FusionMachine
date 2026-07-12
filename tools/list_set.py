@@ -39,7 +39,7 @@ QUERY = """
      WHERE c.set_code = ?
        AND (? = 0 OR c.card_kind = 0)
        AND (? = 0 OR c.has_art = 1)
-     ORDER BY c.card_number
+     ORDER BY c.level, c.card_number
 """
 
 HEADER = ["Card", "Name", "Kind", "Lvl", "DP", "Trait", "Colors", "Art"]
