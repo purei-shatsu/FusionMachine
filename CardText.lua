@@ -1,22 +1,25 @@
 local Class = require("Utils.Class")
 
---paints the card's stats over the ones printed on the art
+--paints the card's stats over the ones printed on the art. It is a snapshot rather than a group so
+--that it has a path of its own: the card fakes its 3d rotation by pulling the four corners of the
+--art into a trapeze, and only a shape can be deformed the same way
 local CardText =
     Class.new(
     {},
     function(self, model)
-        self.displayObject = display.newGroup()
-        self.baseX, self.baseY = model:getTextPosition()
-        self.displayObject.x, self.displayObject.y = self.baseX, self.baseY
-
         self.width, self.height = model:getTextSize()
 
-        display.newRect(self.displayObject, 0, 0, self.width, self.height)
+        local snapshot = display.newSnapshot(self.width, self.height)
+        self.displayObject = snapshot
+        self.baseX, self.baseY = model:getTextPosition()
+        snapshot.x, snapshot.y = self.baseX, self.baseY
+
+        display.newRect(snapshot.group, 0, 0, self.width, self.height)
 
         local text =
             display.newText(
             {
-                parent = self.displayObject,
+                parent = snapshot.group,
                 text = model:getDisplayText(),
                 width = self.width,
                 fontSize = 27,
@@ -24,35 +27,50 @@ local CardText =
             }
         )
         text:setFillColor(0, 0, 0)
+        snapshot:invalidate()
     end
 )
 
---the card is squashed and stretched by deforming the art's quad, which a display group can't
---inherit, so the text box reproduces the deformation with its own scale. The quad displaces its
---corners linearly, so a point at (baseX, baseY) from the card's center lands scaled by the same factors
-function CardText:_getWarp(xScale, yScale)
-    return {
-        xScale = xScale,
-        yScale = yScale,
-        x = self.baseX * xScale,
-        y = self.baseY * yScale
+--offsets each corner of the text box by where the card's deformation sends it. The offsets are the
+--path's own coordinates, relative to the corners of the undeformed box, so the snapshot itself
+--stays at its position on the card and only its quad moves
+function CardText:_getWarpPath(warpPoint)
+    local halfWidth = self.width / 2
+    local halfHeight = self.height / 2
+    --a rect path numbers its corners upper left, lower left, lower right, upper right
+    local corners = {
+        {-halfWidth, -halfHeight},
+        {-halfWidth, halfHeight},
+        {halfWidth, halfHeight},
+        {halfWidth, -halfHeight}
     }
+
+    local path = {}
+    for i, corner in ipairs(corners) do
+        local x = self.baseX + corner[1]
+        local y = self.baseY + corner[2]
+        local warpedX, warpedY = warpPoint(x, y)
+        path["x" .. i] = warpedX - x
+        path["y" .. i] = warpedY - y
+    end
+    return path
 end
 
-function CardText:setWarp(xScale, yScale)
-    for property, value in pairs(self:_getWarp(xScale, yScale)) do
-        self.displayObject[property] = value
+function CardText:setWarp(warpPoint)
+    local path = self.displayObject.path
+    for property, value in pairs(self:_getWarpPath(warpPoint)) do
+        path[property] = value
     end
 end
 
---the scales are affine in the quad's corner displacements, so transitioning them with the same
---timing as the art keeps text and art locked together frame by frame
-function CardText:warpTo(xScale, yScale, params)
-    local warp = self:_getWarp(xScale, yScale)
-    warp.time = params.time
-    warp.delay = params.delay
-    warp.transition = params.transition
-    transition.to(self.displayObject, warp)
+--every offset is affine in the corner displacements the card's own path transitions, so running
+--this with the art's timing keeps text and art locked together frame by frame
+function CardText:warpTo(warpPoint, params)
+    local path = self:_getWarpPath(warpPoint)
+    path.time = params.time
+    path.delay = params.delay
+    path.transition = params.transition
+    transition.to(self.displayObject.path, path)
 end
 
 return CardText

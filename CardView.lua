@@ -6,7 +6,6 @@ local CardText = require("CardText")
 local Event = require("OldEventSystem.Event")
 
 local scale = 1.5
-local minScale = 1e-5
 local CardView =
     Class.new(
     {
@@ -135,9 +134,12 @@ function CardView:setMaterialNumber(text)
     self.materialNumber.text.text = text
 end
 
+function CardView:_getCardDeformation(angle)
+    return self.width * 0.5 * (1 - math.cos(angle)), self.height * 0.1 * math.sin(angle)
+end
+
 function CardView:getCardRotationPath(angle)
-    local dx = self.width * 0.5 * (1 - math.cos(angle))
-    local dy = self.height * 0.1 * (math.sin(angle))
+    local dx, dy = self:_getCardDeformation(angle)
     return {
         x1 = dx,
         y1 = -dy,
@@ -150,12 +152,16 @@ function CardView:getCardRotationPath(angle)
     }
 end
 
---the path narrows the card by 2 * dx and heightens it by 2 * dy, which is the scale the text must
---follow to be squashed and stretched along with the art. The flip turns the card edge-on at
---+-pi/2, where the width collapses to exactly 0 -- not a scale Solar2D accepts
-function CardView:getCardScale(angle)
-    local path = self:getCardRotationPath(angle)
-    return math.max(1 - 2 * path.x1 / self.width, minScale), 1 + 2 * path.y2 / self.height
+--the rotation narrows the card by dx on both sides and grows its left edge by dy while shrinking
+--its right one, turning it into a trapeze that reads as a 3d rotation. The corners move linearly,
+--so the interior follows bilinearly: x is pulled towards the center, and y shears towards the
+--shortened edge by an amount that depends on how far right the point is. The text box rides the
+--card, so its corners are deformed by this same map
+function CardView:getWarpPoint(angle)
+    local dx, dy = self:_getCardDeformation(angle)
+    return function(x, y)
+        return x * (1 - 2 * dx / self.width), y * (1 - 4 * dy * x / (self.width * self.height))
+    end
 end
 
 function CardView:setCardRotation(angle)
@@ -163,7 +169,7 @@ function CardView:setCardRotation(angle)
     for p, v in pairs(self:getCardRotationPath(angle)) do
         path[p] = v
     end
-    self.text:setWarp(self:getCardScale(angle))
+    self.text:setWarp(self:getWarpPoint(angle))
 end
 
 function CardView:rotateCardTo(params)
@@ -173,8 +179,7 @@ function CardView:rotateCardTo(params)
     end
     transition.to(path, params)
 
-    local xScale, yScale = self:getCardScale(params.angle)
-    self.text:warpTo(xScale, yScale, params)
+    self.text:warpTo(self:getWarpPoint(params.angle), params)
 end
 
 function CardView:getModel()
