@@ -73,6 +73,14 @@ function YugiohCardModel:getDisplayText()
     )
 end
 
+function YugiohCardModel:getTextPosition()
+    return 0, 132
+end
+
+function YugiohCardModel:getTextSize()
+    return 225, 72
+end
+
 function YugiohCardModel:getAttack()
     return self.data.atk
 end

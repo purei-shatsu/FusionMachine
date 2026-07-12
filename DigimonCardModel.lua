@@ -1,8 +1,9 @@
 local Class = require("Utils.Class")
 local CardModel = require("CardModel")
+local DigimonTraits = require("DigimonTraits")
 
---colors arrive as the group_concat of card_colors (e.g. "0,5"), so the whole card
---comes back in a single row
+--colors arrive as the group_concat of card_colors (e.g. "0,5") and the trait as the raw
+--first card_types row, so the whole card comes back in a single row
 local DigimonCardModel =
     Class.new(
     {},
@@ -11,6 +12,7 @@ local DigimonCardModel =
         for color in string.gmatch(data.colors, "%d+") do
             table.insert(self.colors, tonumber(color))
         end
+        self.trait = DigimonTraits.getGroup(data.trait)
     end,
     CardModel
 )
@@ -32,7 +34,15 @@ function DigimonCardModel:getImagePath()
 end
 
 function DigimonCardModel:getDisplayText()
-    return string.format("Lv %d\nDP %d", self:getLevel(), self:getPower())
+    return string.format("%s\nLv %d / DP %d", self:getTrait(), self:getLevel(), self:getPower())
+end
+
+function DigimonCardModel:getTextPosition()
+    return 0, 65
+end
+
+function DigimonCardModel:getTextSize()
+    return 250, 80
 end
 
 function DigimonCardModel:getLevel()
@@ -41,6 +51,10 @@ end
 
 function DigimonCardModel:getColors()
     return self.colors
+end
+
+function DigimonCardModel:getTrait()
+    return self.trait
 end
 
 return DigimonCardModel

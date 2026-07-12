@@ -41,6 +41,27 @@ VARIANT_RE = re.compile(r"_P(\d+)$")
 # YAML: "01000000" matches YAML 1.1's octal int rule and would silently become 262144.
 CARD_COLORS_RE = re.compile(r"^\s*cardColors:\s*(\S*)\s*$", re.MULTILINE)
 
+# Fields DCGO ships wrong, overridden with what the card actually says. Applied by
+# CardID in parse_asset, and folded into the card's source_hash so that editing an
+# entry here re-imports that card on the next run.
+#
+# Traits: Type_ENG and Attribute_ENG are swapped on these three cards, and on no others.
+# P-059 is typed "Virus" with attribute "Ceratopsian", while its Japanese fields say the
+# opposite. EX11-011 has the attribute leaking into the front of its type list. The values
+# below are what the Japanese fields say, so the corrected cards go into the database.
+#
+# Stats: these three EX-11 cards ship with DP and PlayCost zeroed out (the rest of EX-11
+# is fine). DP 0 is a legal value -- BT18-086 Lucemon: Larva really is a 0 DP card -- so
+# nothing can detect this automatically; the values come from the official card list.
+CARD_FIXES = {
+    "P-059": {"Type_ENG": ["Ceratopsian"], "Attribute_ENG": ["Virus"]},
+    "P-076": {"Type_ENG": ["Composite"], "Attribute_ENG": ["Virus"]},
+    "EX11-011": {"Type_ENG": ["Dinosaur", "LIBERATOR"], "Attribute_ENG": ["Vaccine"]},
+    "EX11-009": {"DP": 6000, "PlayCost": 5},
+    "EX11-010": {"DP": 7000, "PlayCost": 8},
+    "EX11-047": {"DP": 1000, "PlayCost": 3},
+}
+
 # Release date of every set, from the official product list at
 # https://en.digimoncard.com/products/. The assets carry no date of their own, so
 # this is the only way to answer "which of these two cards is newer".
@@ -133,6 +154,8 @@ def parse_asset(path):
     if not fields or "CardID" not in fields:
         return None
 
+    fields.update(CARD_FIXES.get(fields["CardID"], {}))
+
     match = CARD_COLORS_RE.search(text)
     blob = match.group(1) if match else ""
     if len(blob) % 8:
@@ -193,6 +216,19 @@ def derive_color_names(cards):
     return {value: tally.most_common(1)[0][0] for value, tally in votes.items()}
 
 
+def source_hash(path, card_id):
+    """Identity of a card's input: the .asset bytes, plus its CARD_FIXES entry if it has one.
+
+    Mixing the fix in means editing CARD_FIXES re-imports exactly the cards it names, instead
+    of them being skipped as unchanged. Unfixed cards keep the plain sha1 of their asset.
+    """
+    fix = CARD_FIXES.get(card_id)
+    payload = path.read_bytes()
+    if fix:
+        payload += repr(sorted(fix.items())).encode()
+    return hashlib.sha1(payload).hexdigest()
+
+
 def collect(dcgo_root):
     """Walk the CardBaseEntity tree, merging alt-art printings into one card each."""
     best = {}
@@ -217,7 +253,7 @@ def collect(dcgo_root):
             "path": path,
             "source_path": rel.as_posix(),
             "folder_color": rel.parts[1],
-            "source_hash": hashlib.sha1(path.read_bytes()).hexdigest(),
+            "source_hash": source_hash(path, card_id),
         }
     return best
 

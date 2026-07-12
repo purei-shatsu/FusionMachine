@@ -3,14 +3,12 @@ local Class = require("Utils.Class")
 --paints the card's stats over the ones printed on the art
 local CardText =
     Class.new(
-    {
-        width = 225,
-        height = 72
-    },
+    {},
     function(self, model)
         self.displayObject = display.newGroup()
-        self.displayObject.x = 0
-        self.displayObject.y = 132
+        self.displayObject.x, self.displayObject.y = model:getTextPosition()
+
+        self.width, self.height = model:getTextSize()
 
         display.newRect(self.displayObject, 0, 0, self.width, self.height)
 

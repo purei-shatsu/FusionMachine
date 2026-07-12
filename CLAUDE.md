@@ -55,7 +55,7 @@ Globals in play: `IS_PLAYER_TURN` (set in `Game:runPlayerTurn`/`runAITurn`, gate
 - `getFusionResult(a, b)` — one pairwise fusion, or `nil` when the pair fuses into nothing
 - `compareStats(a, b)` — `1 | -1 | 0`, which of two fusion results the AI prefers
 
-The card models ([YugiohCardModel.lua](YugiohCardModel.lua), [DigimonCardModel.lua](DigimonCardModel.lua)) extend [CardModel.lua](CardModel.lua), which only holds the raw row. They share **no** database columns, so they meet on five methods and the rest of the game knows only those: `getId`, `getName`, `getPower` (the single stat that decides battles — atk or DP), `getImagePath`, `getDisplayText` (the two lines [CardText.lua](CardText.lua) paints over the art). Anything beyond that is read only by that mode's own Rules.
+The card models ([YugiohCardModel.lua](YugiohCardModel.lua), [DigimonCardModel.lua](DigimonCardModel.lua)) extend [CardModel.lua](CardModel.lua), which only holds the raw row. They share **no** database columns, so they meet on five methods and the rest of the game knows only those: `getId`, `getName`, `getPower` (the single stat that decides battles — atk or DP), `getImagePath`, `getDisplayText` (the two lines [CardText.lua](CardText.lua) paints over the art). Anything beyond that is read only by that mode's own Rules (`getLevel`/`getColors`/`getTrait` on the Digimon side, `getRace`/`getAttribute` on the Yu-Gi-Oh one).
 
 Everything else is mode-agnostic and must stay that way: `Game`, `FusionProcessor`, `Animator`, `CardView`, `CardText`, `CardLocator`, `Camera`, `FieldSpace`. `FusionProcessor.performFusion` owns the *chain* (left-to-right, each result feeding the next as material A; a failed step falls through to material B, which `Animator` detects by model identity) and delegates each pairwise step to the rules.
 
@@ -80,9 +80,14 @@ Draws are **level-3 Digimon only**. Cards are restricted to `card_kind = 0` and 
 - `level(C) = max(level(A), level(B)) + 1`
 - every colour of C comes from A or B (no new colour may appear)
 - C shares at least one colour with A **and** at least one with B
+- C has the **trait** of A or of B
 - ordered by colour count desc, then newest set (`sets.release_order`) desc, then `card_id`
 
-All three conditions are symmetric, so the fusion is commutative and deterministic by construction — do not add tie-breaking that reads A and B asymmetrically. DP plays **no part** in the rule, so a result can have lower DP than its materials. Levels top out at 7, so a level-7 material asks for a level-8 result, finds none, and always fails — that is the chain cap, and it is why no explicit cap exists. In practice fusions almost never fail: all 1,770 pairs of a 60-card level-3 sample produced a result.
+All four conditions are symmetric, so the fusion is commutative and deterministic by construction — do not add tie-breaking that reads A and B asymmetrically. DP plays **no part** in the rule, so a result can have lower DP than its materials. Levels top out at 7, so a level-7 material asks for a level-8 result, finds none, and always fails — that is the chain cap, and it is why no explicit cap exists.
+
+The trait is the card's **first** `card_types` row (`ord = 0`); the others are ignored, so Coronamon (Beast/Illiad/TS) is just a Beast. DCGO's 188 raw traits are far too fine-grained to fuse on, so [DigimonTraits.lua](DigimonTraits.lua) groups them into 23 canonical traits (Mini Dragon, Dragonkin and Beast Dragon are all `Dragon`; Reptile is folded into `Dinosaur`, being the Agumon→Greymon line) and the rule compares *groups*. The map is total and has **no fallback**: a trait shipped by a future DCGO set maps to `nil` and blows up rather than being silently bucketed. `DigimonRules` matches on it by splicing the two groups' raw trait names into the SQL as an `in (...)` list.
+
+The trait rule is what makes fusion able to fail: measured over every same-level pair in the pool, level-3 pairs fuse 81% of the time (97% without it), level-4 80%, level-5 86%, level-6 only 38% — level 7 has just 87 cards across 14 groups, so most chains now top out at level 6 and level-7 cards are rare. A failed step is not an error; `FusionProcessor` falls through to material B.
 
 ## The Digimon database
 
@@ -101,6 +106,7 @@ Non-obvious facts about the source data, all learned the hard way:
 - Stage and attribute look single-valued but aren't: 75 cards have two forms (BT18-102 is Mega *and* Hybrid), 14 have two attributes (BT16-102 is Vaccine *and* Free), and types run up to six. Hence the child tables.
 - 21 Digimon genuinely have **no level** (Calumon, the D-Reaper `ADR-xx` agents, Eater) — level-based rules must expect `level = 0`. They never reach play today, since draws are level 3 and fusion asks for `max + 1`.
 - `cardKind` is authoritative, the folder name is not (the DigiEgg `BT1_002` is filed under `Red/Digimon`). Alt-art printings (`_P0`/`_P1` assets) keep the base `CardID` and differ only in `CardSpriteName`, so they merge on `CardID`.
+- Some fields are simply **wrong in DCGO**, and `CARD_FIXES` in the importer overrides them by `CardID`. It covers two defects: (a) `Type_ENG` and `Attribute_ENG` are **swapped** on exactly three cards — P-059 is typed "Virus" with attribute "Ceratopsian", and EX11-011 has its attribute leaking into the front of its type list; the Japanese fields say the opposite, and without the fix "Virus" and "Vaccine" show up as traits. (b) EX11-009, EX11-010 and EX11-047 ship with **`DP` and `PlayCost` zeroed out** (the rest of EX-11 is fine), so MasterTyrannomon fought at 0 power. Nothing can detect that automatically — DP 0 is legal, and BT18-086 Lucemon: Larva really is a 0 DP card — so the values come from the official card list. A card's `source_hash` mixes in its `CARD_FIXES` entry, so editing the map re-imports exactly the cards it names instead of skipping them as unchanged.
 - Only 3,276 of the 4,018 cards have art (`cards.has_art` / `cards.image_file`), which is why every gameplay query filters on `has_art = 1`. That still leaves 581 level-3 Digimon to draw from.
 - Levels: 3 → 701, 4 → 801, 5 → 701, 6 → 677, 7 → 93. Colours: 3,200 cards are mono, 792 dual, only 24 tri-colour.
 

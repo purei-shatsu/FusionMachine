@@ -9,6 +9,8 @@
         getPower()          the single stat that decides battles (atk / DP)
         getImagePath()      the card art
         getDisplayText()    the two lines CardText paints over the art
+        getTextPosition()   x, y of that text box, since the two arts print their stats
+                            in different places
 
     Anything beyond that is the mode's own business, and only its own Rules reads it.
 --]]
