@@ -53,6 +53,12 @@ CARD_COLORS_RE = re.compile(r"^\s*cardColors:\s*(\S*)\s*$", re.MULTILINE)
 # Stats: these three EX-11 cards ship with DP and PlayCost zeroed out (the rest of EX-11
 # is fine). DP 0 is a legal value -- BT18-086 Lucemon: Larva really is a 0 DP card -- so
 # nothing can detect this automatically; the values come from the official card list.
+#
+# Scrape leftovers: EX11-074 Vortexdramon has the wiki markup '[[:Category:|]]' where its
+# name should be and '???' where its first type should be, so it fused into nothing (no
+# trait group matches '???'). Its real types are Bird Dragon / Vortex Warriors / LIBERATOR.
+# The Tamers EX11-053 and EX11-071 carry the same broken name, but the game never sees
+# them (it only plays card_kind 0), so they are left alone.
 CARD_FIXES = {
     "P-059": {"Type_ENG": ["Ceratopsian"], "Attribute_ENG": ["Virus"]},
     "P-076": {"Type_ENG": ["Composite"], "Attribute_ENG": ["Virus"]},
@@ -60,6 +66,10 @@ CARD_FIXES = {
     "EX11-009": {"DP": 6000, "PlayCost": 5},
     "EX11-010": {"DP": 7000, "PlayCost": 8},
     "EX11-047": {"DP": 1000, "PlayCost": 3},
+    "EX11-074": {
+        "CardName_ENG": "Vortexdramon",
+        "Type_ENG": ["Bird Dragon", "Vortex Warriors", "LIBERATOR"],
+    },
 }
 
 # Release date of every set, from the official product list at
