@@ -6,7 +6,8 @@ local CardText =
     {},
     function(self, model)
         self.displayObject = display.newGroup()
-        self.displayObject.x, self.displayObject.y = model:getTextPosition()
+        self.baseX, self.baseY = model:getTextPosition()
+        self.displayObject.x, self.displayObject.y = self.baseX, self.baseY
 
         self.width, self.height = model:getTextSize()
 
@@ -26,12 +27,32 @@ local CardText =
     end
 )
 
-function CardText:hide()
-    self.displayObject.isVisible = false
+--the card is squashed and stretched by deforming the art's quad, which a display group can't
+--inherit, so the text box reproduces the deformation with its own scale. The quad displaces its
+--corners linearly, so a point at (baseX, baseY) from the card's center lands scaled by the same factors
+function CardText:_getWarp(xScale, yScale)
+    return {
+        xScale = xScale,
+        yScale = yScale,
+        x = self.baseX * xScale,
+        y = self.baseY * yScale
+    }
 end
 
-function CardText:show()
-    self.displayObject.isVisible = true
+function CardText:setWarp(xScale, yScale)
+    for property, value in pairs(self:_getWarp(xScale, yScale)) do
+        self.displayObject[property] = value
+    end
+end
+
+--the scales are affine in the quad's corner displacements, so transitioning them with the same
+--timing as the art keeps text and art locked together frame by frame
+function CardText:warpTo(xScale, yScale, params)
+    local warp = self:_getWarp(xScale, yScale)
+    warp.time = params.time
+    warp.delay = params.delay
+    warp.transition = params.transition
+    transition.to(self.displayObject, warp)
 end
 
 return CardText

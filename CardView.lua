@@ -6,6 +6,7 @@ local CardText = require("CardText")
 local Event = require("OldEventSystem.Event")
 
 local scale = 1.5
+local minScale = 1e-5
 local CardView =
     Class.new(
     {
@@ -149,11 +150,20 @@ function CardView:getCardRotationPath(angle)
     }
 end
 
+--the path narrows the card by 2 * dx and heightens it by 2 * dy, which is the scale the text must
+--follow to be squashed and stretched along with the art. The flip turns the card edge-on at
+--+-pi/2, where the width collapses to exactly 0 -- not a scale Solar2D accepts
+function CardView:getCardScale(angle)
+    local path = self:getCardRotationPath(angle)
+    return math.max(1 - 2 * path.x1 / self.width, minScale), 1 + 2 * path.y2 / self.height
+end
+
 function CardView:setCardRotation(angle)
     local path = self.image.path
     for p, v in pairs(self:getCardRotationPath(angle)) do
         path[p] = v
     end
+    self.text:setWarp(self:getCardScale(angle))
 end
 
 function CardView:rotateCardTo(params)
@@ -162,6 +172,9 @@ function CardView:rotateCardTo(params)
         params[p] = v
     end
     transition.to(path, params)
+
+    local xScale, yScale = self:getCardScale(params.angle)
+    self.text:warpTo(xScale, yScale, params)
 end
 
 function CardView:getModel()
@@ -181,19 +194,10 @@ function CardView:summon(position)
         true
     )
     self.displayObject:toBack()
-    self:showText()
 end
 
 function CardView:getSide()
     return self.side
-end
-
-function CardView:hideText()
-    self.text:hide()
-end
-
-function CardView:showText()
-    self.text:show()
 end
 
 function CardView:_hideMaterialNumber()
