@@ -2,7 +2,7 @@
     A card's trait is its first card_types row (ord == 0); the others are ignored, so
     Coronamon (Beast/Illiad/TS) is simply a Beast.
 
-    DCGO's raw traits are far too fine-grained to fuse on -- 190 of them, with Dragon,
+    DCGO's raw traits are far too fine-grained to fuse on -- 205 of them, with Dragon,
     Mini Dragon, Dragonkin and Beast Dragon all separate -- so they are grouped here and
     the fusion rule compares groups. Every raw trait belongs to exactly one group: a trait
     added by a future DCGO set maps to nil and blows up, rather than being silently
@@ -20,7 +20,8 @@ local traits = {
         "Mammal",
         "Ancient Animal",
         "Ancient Mythical Beast",
-        "Beast Knight"
+        "Beast Knight",
+        "ElusiveBeast"
     },
     Machine = {
         "Machine",
@@ -45,7 +46,8 @@ local traits = {
         "Mythical Dragon",
         "Beast Dragon",
         "Bird Dragon",
-        "Dragon Warrior"
+        "Dragon Warrior",
+        "Fire Dragon"
     },
     --Reptile is the Agumon line, and digivolves into Dinosaur
     Dinosaur = {
@@ -76,6 +78,7 @@ local traits = {
         "Crustacean",
         "Ancient Crustacean",
         "Tropical Fish",
+        "Ancient Fish",
         "Amphibian",
         "Marine Man",
         "Plesiosaur"
@@ -115,13 +118,24 @@ local traits = {
         "9000",
         "Tathāgata"
     },
+    --the D-Reaper and its agents, worn only by the ADR-xx cards
     Demon = {
         "Demon",
         "Demon Lord",
         "Demon God",
         "Evil",
         "Wicked God",
-        "Fallen Angel"
+        "Fallen Angel",
+        "AA Defense Agent",
+        "Ability Synthesis Agent",
+        "Base Defense Agent",
+        "Commander Agent",
+        "Espionage Agent",
+        "Grappling Agent",
+        "Ground Combat Agent",
+        "Intel Acquisition Agent",
+        "Mothership Agent",
+        "Reconnaissance Agent"
     },
     Bird = {
         "Bird",
@@ -207,12 +221,16 @@ local traits = {
         "Saving",
         "Restoration",
         "Muscle Training",
-        "AA Defense Agent",
-        "Base Defense Agent",
-        "Commander Agent",
-        "Espionage Agent",
-        "Ground Combat Agent",
-        "Intel Acquisition Agent"
+        "Online",
+        "Offline",
+        "Login",
+        "Logoff",
+        "Reboot",
+        "Super Boot",
+        "Forced Termination",
+        "Design",
+        "LCD",
+        "Musical Instrument"
     },
     Plant = {
         "Vegetation",

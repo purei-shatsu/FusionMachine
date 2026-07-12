@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS cards (
     card_number         INTEGER,            -- 38
     name_en             TEXT NOT NULL,
     name_jp             TEXT,
-    card_kind           INTEGER NOT NULL,   -- 0 Digimon, 1 Tamer, 2 Option, 3 DigiEgg
+    card_kind           INTEGER NOT NULL,   -- primary kind: 0 Digimon, 1 Tamer, 2 Option, 3 DigiEgg
     card_kind_name      TEXT,
     level               INTEGER,            -- 0 when n/a (Tamer/Option)
     dp                  INTEGER,
@@ -45,6 +45,17 @@ CREATE TABLE IF NOT EXISTS card_colors (
     ord        INTEGER NOT NULL,
     color      INTEGER NOT NULL,
     color_name TEXT,
+    PRIMARY KEY (card_id, ord),
+    FOREIGN KEY (card_id) REFERENCES cards(card_id) ON DELETE CASCADE
+);
+
+-- Usually one kind, but BT25/EX12 ship dual cards that are a Digimon with an Option side
+-- (Siriusmon EX12-018 is [0, 2]), hence a table. cards.card_kind keeps the first one.
+CREATE TABLE IF NOT EXISTS card_kinds (
+    card_id   TEXT NOT NULL,
+    ord       INTEGER NOT NULL,
+    kind      INTEGER NOT NULL,
+    kind_name TEXT,
     PRIMARY KEY (card_id, ord),
     FOREIGN KEY (card_id) REFERENCES cards(card_id) ON DELETE CASCADE
 );

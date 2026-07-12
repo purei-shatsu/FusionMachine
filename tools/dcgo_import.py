@@ -37,18 +37,34 @@ CARD_KINDS = {0: "Digimon", 1: "Tamer", 2: "Option", 3: "DigiEgg"}
 # stays the base id, so it is the merge key; this only picks which asset wins.
 VARIANT_RE = re.compile(r"_P(\d+)$")
 
-# cardColors is Unity's compact hex blob for an int array. It must NOT go through
-# YAML: "01000000" matches YAML 1.1's octal int rule and would silently become 262144.
-CARD_COLORS_RE = re.compile(r"^\s*cardColors:\s*(\S*)\s*$", re.MULTILINE)
+# cardColors and cardKind are Unity's compact hex blob for an int array. They must NOT
+# go through YAML: "01000000" matches YAML 1.1's octal int rule and would silently become
+# 262144. Both are genuinely multi-valued -- BT25/EX12 ship dual Digimon/Option cards
+# (Siriusmon EX12-018), whose cardKind is [0, 2].
+def int_blob(text, field, path):
+    match = re.search(rf"^\s*{field}:\s*(\S*)\s*$", text, re.MULTILINE)
+    blob = match.group(1) if match else ""
+    if len(blob) % 8:
+        raise ValueError(f"{path}: {field} blob {blob!r} is not a whole number of int32s")
+    return [v[0] for v in struct.iter_unpack("<i", bytes.fromhex(blob))]
+
+# A bare "=" is YAML 1.1's reserved "value" tag, which SafeLoader has no constructor
+# for. DCGO writes one in EX12_021_P1's dualEffect (where every other card has a name
+# or '-'), so keep it a plain string instead of letting the whole asset fail to parse.
+yaml.SafeLoader.add_constructor(
+    "tag:yaml.org,2002:value", lambda loader, node: loader.construct_scalar(node)
+)
 
 # Fields DCGO ships wrong, overridden with what the card actually says. Applied by
 # CardID in parse_asset, and folded into the card's source_hash so that editing an
 # entry here re-imports that card on the next run.
 #
-# Traits: Type_ENG and Attribute_ENG are swapped on these three cards, and on no others.
+# Traits: Type_ENG and Attribute_ENG are swapped on these six cards, and on no others.
 # P-059 is typed "Virus" with attribute "Ceratopsian", while its Japanese fields say the
 # opposite. EX11-011 has the attribute leaking into the front of its type list. The values
 # below are what the Japanese fields say, so the corrected cards go into the database.
+# They are found by looking for a card whose first type is an attribute name -- a trait can
+# never be "Vaccine" | "Data" | "Virus" | "Free".
 #
 # Stats: these three EX-11 cards ship with DP and PlayCost zeroed out (the rest of EX-11
 # is fine). DP 0 is a legal value -- BT18-086 Lucemon: Larva really is a 0 DP card -- so
@@ -61,7 +77,10 @@ CARD_COLORS_RE = re.compile(r"^\s*cardColors:\s*(\S*)\s*$", re.MULTILINE)
 # them (it only plays card_kind 0), so they are left alone.
 CARD_FIXES = {
     "P-059": {"Type_ENG": ["Ceratopsian"], "Attribute_ENG": ["Virus"]},
+    "P-061": {"Type_ENG": ["Mollusk"], "Attribute_ENG": ["Data"]},
+    "P-074": {"Type_ENG": ["Beastkin"], "Attribute_ENG": ["Vaccine"]},
     "P-076": {"Type_ENG": ["Composite"], "Attribute_ENG": ["Virus"]},
+    "P-077": {"Type_ENG": ["Wizard"], "Attribute_ENG": ["Data"]},
     "EX11-011": {"Type_ENG": ["Dinosaur", "LIBERATOR"], "Attribute_ENG": ["Vaccine"]},
     "EX11-009": {"DP": 6000, "PlayCost": 5},
     "EX11-010": {"DP": 7000, "PlayCost": 8},
@@ -154,7 +173,7 @@ SET_RELEASES = {
 
 
 def parse_asset(path):
-    """Parse one Unity .asset into (fields, colors). Returns None for non-card assets."""
+    """Parse one Unity .asset into (fields, colors, kinds). Returns None for non-card assets."""
     text = path.read_text(encoding="utf-8")
 
     # Drop the Unity header (%YAML / %TAG / --- !u!114 &...) so this is plain YAML.
@@ -166,14 +185,7 @@ def parse_asset(path):
 
     fields.update(CARD_FIXES.get(fields["CardID"], {}))
 
-    match = CARD_COLORS_RE.search(text)
-    blob = match.group(1) if match else ""
-    if len(blob) % 8:
-        raise ValueError(f"{path}: cardColors blob {blob!r} is not a whole number of int32s")
-    raw = bytes.fromhex(blob)
-    colors = [v[0] for v in struct.iter_unpack("<i", raw)]
-
-    return fields, colors
+    return fields, int_blob(text, "cardColors", path), int_blob(text, "cardKind", path)
 
 
 def normalize_set_code(printed):
@@ -246,7 +258,7 @@ def collect(dcgo_root):
         parsed = parse_asset(path)
         if parsed is None:
             continue
-        fields, colors = parsed
+        fields, colors, kinds = parsed
 
         card_id = fields["CardID"]
         variant = VARIANT_RE.search(path.stem)
@@ -260,6 +272,7 @@ def collect(dcgo_root):
             "rank": rank,
             "fields": fields,
             "colors": colors,
+            "kinds": kinds,
             "path": path,
             "source_path": rel.as_posix(),
             "folder_color": rel.parts[1],
@@ -296,7 +309,9 @@ def build_row(card_id, card, art_dir, now):
     fields = card["fields"]
 
     set_code, _, number = card_id.rpartition("-")
-    kind = fields["cardKind"]
+    # The first kind is the card's primary nature; a dual Digimon/Option card is a Digimon
+    # that also has an Option side, never the reverse. card_kinds holds the full list.
+    kind = card["kinds"][0]
 
     image_file = art_file(art_dir, card_id)
 
@@ -330,12 +345,24 @@ def build_row(card_id, card, art_dir, now):
 
 
 def write_children(db, card_id, card, color_names):
-    for table in ("card_colors", "card_types", "card_forms", "card_attributes", "card_evo_costs"):
+    tables = (
+        "card_colors",
+        "card_kinds",
+        "card_types",
+        "card_forms",
+        "card_attributes",
+        "card_evo_costs",
+    )
+    for table in tables:
         db.execute(f"DELETE FROM {table} WHERE card_id = ?", (card_id,))
 
     db.executemany(
         "INSERT INTO card_colors (card_id, ord, color, color_name) VALUES (?, ?, ?, ?)",
         [(card_id, i, c, color_names.get(c)) for i, c in enumerate(card["colors"])],
+    )
+    db.executemany(
+        "INSERT INTO card_kinds (card_id, ord, kind, kind_name) VALUES (?, ?, ?, ?)",
+        [(card_id, i, k, CARD_KINDS[k]) for i, k in enumerate(card["kinds"])],
     )
     for table, column, field in (
         ("card_types", "type_en", "Type_ENG"),
