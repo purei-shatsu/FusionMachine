@@ -37,7 +37,7 @@ local Game =
                 end
             }
         },
-        aiDifficulty = 2
+        aiDifficulty = 5
     },
     function(self)
         self.locator = {}

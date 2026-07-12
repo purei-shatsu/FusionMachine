@@ -78,9 +78,10 @@ The fusion rule *is* the SQL in `YugiohRules.getFusionResult`: pick the card who
 Draws are **level-3 Digimon only**, restricted to `card_kind = 0` (and to `drawSets`, when that list is non-empty). Cards with **no art are deliberately still played**: `display.newImageRect` returns nil for the missing `digimon_pics/<id>.jpg`, and `CardView:_createImage` stands a white rectangle in for it and prints the card's name, so a gap in the art is visible and named rather than silently shrinking the pool. Fusing A + B:
 
 - `level(C) = max(level(A), level(B)) + 1`
-- every colour of C comes from A or B (no new colour may appear)
 - C shares a **trait** with one material and a **colour** with the other
 - ordered by newest set (`sets.release_order`) desc, then `card_id`
+
+C may carry colours **neither material has** — Impmon (Purple/Red) + Sunarizamon (Black) fuses into Tyrannomon (Red/Green), taking Red from the first and `Dinosaur` from the second, and its Green is free. An earlier rule required every colour of C to come from A or B; it was dropped because it rejected exactly this kind of pair.
 
 Every condition is symmetric, so the fusion is commutative and deterministic by construction — do not add tie-breaking that reads A and B asymmetrically. DP plays **no part** in the rule, so a result can have lower DP than its materials. Levels top out at 7, so a level-7 material asks for a level-8 result, finds none, and always fails — that is the chain cap, and it is why no explicit cap exists.
 
@@ -90,7 +91,7 @@ The rest is **slop**, listed explicitly in the same module and skipped. Two kind
 
 The trait grouping cannot live in the database — it is a rule, and rules live in `DigimonRules`. But SQL has to filter on it, so `DigimonRules.buildTraitIndex` resolves every Digimon through `DigimonTraits` once at module load into a **`temp` table `card_traits`**, which the fusion query then joins against. That is also where an unknown trait errors out.
 
-The trait rule is what makes fusion able to fail: measured over sampled same-level pairs, level-3 pairs fuse 98% of the time, level-4 97%, level-5 97%, level-6 69% — level 7 has just 100 cards, so most chains still top out at level 6 and level-7 cards are rare. A failed step is not an error; `FusionProcessor` falls through to material B.
+The trait rule is what makes fusion able to fail: measured over sampled same-level pairs, level-3 pairs fuse 99% of the time, level-4 98%, level-5 99%, level-6 91% — level 7 has just 100 cards, so chains still thin out at the top. A failed step is not an error; `FusionProcessor` falls through to material B.
 
 ## The Digimon database
 

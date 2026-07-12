@@ -85,20 +85,6 @@ local selectCard =
     ]] ..
     drawSetsClause()
 
-local function union(colorsA, colorsB)
-    local seen = {}
-    local result = {}
-    for _, colors in ipairs({colorsA, colorsB}) do
-        for _, color in ipairs(colors) do
-            if not seen[color] then
-                seen[color] = true
-                table.insert(result, color)
-            end
-        end
-    end
-    return result
-end
-
 function DigimonRules.drawCards(amount)
     local cards = {}
     local sqlQuery = string.format("%s and c.level==%d order by random() limit %d", selectCard, drawLevel, amount)
@@ -111,9 +97,12 @@ end
 --[[
     Fusion Conditions:
         Level is one above the highest material;
-        Every colour of the result comes from one of the materials;
         The result shares a trait with one material and a colour with the other.
     Order by: newest set, id
+
+    The result may carry colours neither material has: Tyrannomon (Red/Green) is a legal result of
+    Impmon (Purple/Red) and Sunarizamon (Black), taking Red from the first and Dinosaur from the
+    second, and its Green is free.
 
     Every condition is symmetric in a and b, so the fusion is commutative, and the ordering is
     total, so it is deterministic. Levels top out at 7, so a level 7 material asks for a level
@@ -129,7 +118,6 @@ function DigimonRules.getFusionResult(a, b)
         [[
         %s and
         c.level==%d and
-        not exists (select 1 from card_colors x where x.card_id==c.card_id and x.color not in (%s)) and
         ((exists (select 1 from card_traits x where x.card_id==c.card_id and x.trait in (%s)) and
           exists (select 1 from card_colors x where x.card_id==c.card_id and x.color in (%s))) or
          (exists (select 1 from card_traits x where x.card_id==c.card_id and x.trait in (%s)) and
@@ -140,7 +128,6 @@ function DigimonRules.getFusionResult(a, b)
         ]],
         selectCard,
         math.max(a:getLevel(), b:getLevel()) + 1,
-        toSqlList(union(a:getColors(), b:getColors())),
         traitsA,
         colorsB,
         traitsB,
