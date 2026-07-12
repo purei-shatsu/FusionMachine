@@ -1,9 +1,5 @@
 TODO
-    Expandir ideia das traits
-        Fazer os digimons terem todas as traits, menos as slop (TS, liberator, etc.)
-        Permissivo: fusão funciona se qualquer trait de C bater com qualquer trait de A ou B
-        Restritivo: fusão funciona se pelo menos uma trait de A e uma de B estiverem em C
-    Arrumar traits inalcansáveis (ex: não tem como fazer warriors porque não existem warriors low-level)
+    Arrumar traits inalcançáveis (ex: não tem como fazer warriors porque não existem warriors low-level)
         Talvez não seja um problema se tu incluir level 4 na pool também
 
 Old:

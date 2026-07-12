@@ -7,7 +7,8 @@ local DigimonRules = {}
 local database = Database.open("digimon.cdb")
 
 --only Digimon cards. Cards with no art are played anyway, standing in as a white rectangle
-local drawLevel = 3
+local minDrawLevel = 3
+local maxDrawLevel = 3
 
 --the card pool the game plays with, e.g. {"BT24", "EX11"}. Empty means every set.
 --restricts both the drawn hands and the fusion results
@@ -87,7 +88,7 @@ local selectCard =
 
 function DigimonRules.drawCards(amount)
     local cards = {}
-    local sqlQuery = string.format("%s and c.level==%d order by random() limit %d", selectCard, drawLevel, amount)
+    local sqlQuery = string.format("%s and c.level>=%d and c.level<=%d order by random() limit %d", selectCard, minDrawLevel, maxDrawLevel, amount)
     for data in database:nrows(sqlQuery) do
         table.insert(cards, DigimonCardModel:new(data))
     end
