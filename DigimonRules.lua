@@ -6,7 +6,7 @@ local DigimonRules = {}
 
 local database = Database.open("digimon.cdb")
 
---only Digimon cards, and only ones we have art for
+--only Digimon cards. Cards with no art are played anyway, so a missing image fails loudly
 local drawLevel = 3
 
 --the card pool the game plays with, e.g. {"BT24", "EX11"}. Empty means every set.
@@ -35,7 +35,7 @@ local selectCard =
     select c.*, (select group_concat(color) from card_colors x where x.card_id==c.card_id) as colors,
                 (select t.type_en from card_types t where t.card_id==c.card_id and t.ord==0) as trait
     from cards as c inner join sets as s on s.set_code==c.set_code
-    where c.card_kind==0 and c.has_art==1
+    where c.card_kind==0
     ]] ..
     drawSetsClause()
 

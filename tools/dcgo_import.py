@@ -268,14 +268,37 @@ def collect(dcgo_root):
     return best
 
 
+def art_file(art_dir, card_id):
+    image = art_dir / f"{card_id}.webp"
+    return image.name if image.is_file() else None
+
+
+def refresh_art(db, art_dir):
+    """Re-stamp has_art/image_file on every card, imported this run or not.
+
+    Art presence is a fact about the art folder, not about the .asset, so the source_hash
+    skip would otherwise freeze it at whatever was on disk the first time a card was seen --
+    a card whose art downloaded after its import would stay artless forever.
+    """
+    changed = 0
+    for card_id, image_file in db.execute("SELECT card_id, image_file FROM cards").fetchall():
+        current = art_file(art_dir, card_id)
+        if current != image_file:
+            db.execute(
+                "UPDATE cards SET image_file = ?, has_art = ? WHERE card_id = ?",
+                (current, int(current is not None), card_id),
+            )
+            changed += 1
+    return changed
+
+
 def build_row(card_id, card, art_dir, now):
     fields = card["fields"]
 
     set_code, _, number = card_id.rpartition("-")
     kind = fields["cardKind"]
 
-    image = art_dir / f"{card_id}.webp"
-    has_art = image.is_file()
+    image_file = art_file(art_dir, card_id)
 
     return {
         "card_id": card_id,
@@ -298,8 +321,8 @@ def build_row(card_id, card, art_dir, now):
         "inherited_effect_en": blank_to_none(fields.get("InheritedEffectDiscription_ENG")),
         "security_effect_en": blank_to_none(fields.get("SecurityEffectDiscription_ENG")),
         "sprite_name": blank_to_none(fields.get("CardSpriteName")),
-        "image_file": image.name if has_art else None,
-        "has_art": int(has_art),
+        "image_file": image_file,
+        "has_art": int(image_file is not None),
         "source_path": card["source_path"],
         "source_hash": card["source_hash"],
         "updated_at": now,
@@ -388,6 +411,7 @@ def main():
         db.executemany("DELETE FROM cards WHERE card_id = ?", [(c,) for c in missing])
 
     write_sets(db)
+    rehashed = refresh_art(db, args.art)
     db.commit()
 
     with_art = db.execute("SELECT count(*) FROM cards WHERE has_art = 1").fetchone()[0]
@@ -395,6 +419,7 @@ def main():
     db.close()
 
     print(f"added {added} / updated {updated} / unchanged {unchanged}")
+    print(f"art re-stamped on {rehashed} cards")
     if missing:
         action = "pruned" if args.prune else "still present (use --prune to delete)"
         print(f"missing .asset for {len(missing)} cards: {action}")
