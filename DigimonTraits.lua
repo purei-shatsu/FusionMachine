@@ -63,7 +63,6 @@ local traits = {
         "Dragon Warrior",
         "Fire Dragon"
     },
-    --Reptile is the Agumon line, and digivolves into Dinosaur
     Dinosaur = {
         "Dinosaur",
         "Ceratopsian",
@@ -274,7 +273,7 @@ local traits = {
     Flame = {
         "Flame"
     },
-    ["Ice-Snow"] = {
+    Ice = {
         "Ice-Snow"
     },
     Food = {
@@ -301,7 +300,7 @@ local traits = {
         "Legend-Arms",
         "Big Death-Stars"
     },
-    ["Royal Knight"] = {
+    RK = {
         "Royal Knight"
     },
     --the original virtual pet versions
@@ -315,33 +314,34 @@ local traits = {
     SoC = {
         "SoC"
     },
-    ["Olympos XII"] = {
+    Olympos = {
         "Olympos XII"
     },
     Titan = {
         "Titan"
     },
     --the six virtual pet families, spelled out because the group name is printed on the card
-    ["Nature Spirits"] = {
+    NSp = {
         "NSp"
     },
-    ["Nightmare Soldiers"] = {
+    NSo = {
         "NSo"
     },
-    ["Deep Savers"] = {
+    DS = {
         "DS"
     },
-    ["Wind Guardians"] = {
+    WG = {
         "WG"
     },
-    ["Metal Empire"] = {
+    ME = {
         "ME"
     },
-    ["Virus Busters"] = {
+    VB = {
         "VB"
     },
     ["D-Brigade"] = {
-        "D-Brigade"
+        "D-Brigade",
+        "DigiPolice"
     },
     ["Glowing Dawn"] = {
         "Glowing Dawn"
@@ -365,10 +365,10 @@ local traits = {
     Boss = {
         "Boss"
     },
-    ["Vortex Warriors"] = {
+    Vortex = {
         "Vortex Warriors"
     },
-    ["Abadin Electronics"] = {
+    Abadin = {
         "Abadin Electronics"
     },
     Leviathan = {
@@ -408,8 +408,7 @@ local slop = {
     --ahead of them, so they reach a card's traits either never (Royal Base, Chronicle) or on
     --a single level (DigiPolice)
     "Royal Base",
-    "Chronicle",
-    "DigiPolice"
+    "Chronicle"
 }
 
 local DigimonTraits = {}
